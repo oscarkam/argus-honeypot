@@ -1,0 +1,40 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+
+# Ansible
+*.retry
+.vault_pass
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+
+# Secrets and keys
+*.pem
+*.key
+credentials
+secrets/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/settings.json
+
+# Logs
+*.log
+
+# Ollama models (large)
+*.gguf
