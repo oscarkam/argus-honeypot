@@ -21,3 +21,14 @@
 **Response**: Removed `.terraform.lock.hcl` from `.gitignore` and committed the lock file to version control with explanatory commit message.
 
 **Lesson learned**: Always read the output of IaC tool initialisation commands — they often surface configuration smells the user wouldn't catch otherwise. Distinguish carefully between Terraform files that MUST be ignored (state files contain secrets, `.terraform/` is local cache) versus files that MUST be committed (lock files, `.tf` source, example `.tfvars`).
+
+## Pitfall 3: `.gitattributes` Placed in Wrong Directory
+**Date**: 30 June 2026
+**Phase**: 0 RESCUE / 1 transition — line-ending consistency setup
+**What happened**: The `.gitattributes` file intended to enforce LF line endings across the entire repository was inadvertently created inside `docs/` rather than at the repository root. Git only applies `.gitattributes` rules to files at or below its location, so the misplaced file would have only governed markdown files in `docs/`, leaving Terraform, Ansible, and Python source files unaffected.
+
+**Impact**: Low — caught during `git status` review at the start of the next session before any cross-platform line-ending issue manifested.
+
+**Response**: Moved the file from `docs/.gitattributes` to `.gitattributes` (repo root); committed and pushed with explanatory message. Also corrected the missing trailing newline (POSIX convention).
+
+**Lesson learned**: Repository-wide configuration files (`.gitattributes`, `.gitignore`, `.editorconfig`, root-level `README.md`) must live at the repository root to have project-wide effect. When creating such files in VS Code, verify the parent folder is the repo root (not whichever subfolder happens to be open in the sidebar).
