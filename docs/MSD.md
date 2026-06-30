@@ -56,6 +56,14 @@
 - [ ] Root account MFA setup (~5 min)
 - [ ] Send supervisor email follow-up if reply received
 
+### Day 2 (20 Jun 2026) outcomes
+- Ollama 0.30.10 installed on Windows; llama3.2:3b model pulled (2.0 GB) and smoke-tested for coherent output
+- AWS root account secured with TOTP MFA via Google Authenticator
+- First weekly logbook entry written and saved (Word + markdown mirror in `docs/LOGBOOK.md`)
+- SSH key pair `cp2_honeypot_ed25519` generated; public key imported to AWS as Key Pair `cp2-honeypot-key` in ap-southeast-1
+
+**Phase 0 RESCUE: COMPLETE.** All foundation, tooling, security, and documentation prerequisites in place for Phase 1 (Break Week Mega-Sprint) starting Monday 22 June.
+
 ## Phase Log
 
 | Date | Phase | Status | Notes |
