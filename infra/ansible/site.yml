@@ -1,0 +1,12 @@
+---
+- name: Verify Ansible connectivity to T-Pot host
+  hosts: honeypot
+  gather_facts: true
+  tasks:
+    - name: Print gathered OS facts (proves Ansible reached the host)
+      ansible.builtin.debug:
+        msg:
+          - "Distribution: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Kernel: {{ ansible_kernel }}"
+          - "Architecture: {{ ansible_architecture }}"
+          - "Memory (MB): {{ ansible_memtotal_mb }}"
