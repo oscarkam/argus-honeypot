@@ -8,6 +8,8 @@
 # Ansible
 *.retry
 .vault_pass
+**/vars/*_secrets.yml
+!**/vars/*_secrets.example.yml
 
 # Python
 __pycache__/
