@@ -69,3 +69,20 @@
 | Date | Phase | Status | Notes |
 |---|---|---|---|
 | 19 Jun 2026 | Phase 0 RESCUE Day 1 | Completed | Foundation + cloud account + repo + full local toolchain |
+
+- **Live infrastructure (as of 1 Jul 2026)**:
+  - VPC: `vpc-0b231bdebdfde3f8f`
+  - Subnet: `subnet-0cb7aac0f1a5c68e3` (10.0.1.0/24, ap-southeast-1a)
+  - Security Group: `sg-06147f343a89ca0ee`
+  - EC2 Instance: `i-02c73e226b225ce3e` (t3.large, Ubuntu 24.04.4 LTS)
+  - Public IP: `47.129.9.195`
+  - Internal IP: `10.0.1.237`
+  - Kibana URL (post-install): `https://47.129.9.195:64297`
+
+  **Phase 1: Build Sprint** (in progress)
+
+### Day 1 (1 Jul 2026) outcomes
+- Complete Terraform config authored (network.tf, security.tf, compute.tf, outputs.tf)
+- First `terraform apply` succeeded — 7 AWS resources provisioned in 40 seconds
+- SSH connectivity to EC2 verified via mobile hotspot (campus network SSH block documented as Pitfall #4)
+- Instance vitals confirmed: 7.6 GiB RAM, 30 GB disk, egress working

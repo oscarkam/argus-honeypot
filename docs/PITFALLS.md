@@ -32,3 +32,18 @@
 **Response**: Moved the file from `docs/.gitattributes` to `.gitattributes` (repo root); committed and pushed with explanatory message. Also corrected the missing trailing newline (POSIX convention).
 
 **Lesson learned**: Repository-wide configuration files (`.gitattributes`, `.gitignore`, `.editorconfig`, root-level `README.md`) must live at the repository root to have project-wide effect. When creating such files in VS Code, verify the parent folder is the repo root (not whichever subfolder happens to be open in the sidebar).
+
+## Pitfall 4: Campus Network SSH Interception
+**Date**: 1 July 2026
+**Phase**: 1 Build Sprint — first EC2 SSH access
+**What happened**: After successful `terraform apply` creating the T-Pot EC2 instance, all SSH attempts from campus WiFi hung indefinitely with no error output. Layered diagnostic (`nc` for TCP-level, `ssh -v` for handshake-level, AWS Console for instance health) revealed TCP reachability was intact and the EC2 instance passed 3/3 status checks — but the SSH handshake hung immediately after the client sent its version banner, with no server reply.
+
+**Root cause**: The campus network's deep-packet-inspection firewall permits TCP connections to port 22 but silently intercepts and drops the SSH version-exchange handshake at the application layer, effectively blocking outbound SSH to public IPs. This is a common security policy on Malaysian university networks.
+
+**Impact**: Session-blocking on campus premises only; no impact when working from mobile hotspot or residential ISP.
+
+**Response**: Switched laptop to mobile hotspot connection; SSH connected instantly, confirming the diagnosis. Continued Ansible orchestration workflow over the hotspot connection.
+
+**Long-term mitigation under evaluation**: AWS Systems Manager Session Manager (SSM) would provide IAM-authenticated shell access via HTTPS (port 443) through the AWS regional endpoint, eliminating the port 22 dependency. This would allow admin access from any network permitting outbound HTTPS, including campus WiFi. Requires adding an IAM role, instance profile, and SSM agent configuration to the Terraform config. Estimated setup: 15 minutes; deferred to a Phase 2 enhancement to avoid disrupting the current build sprint.
+
+**Lesson learned**: When a TCP-level test succeeds but application-level handshake hangs, the culprit is typically an application-layer proxy or DPI firewall. Layered diagnostic (`nc` → `ssh -v` → cloud provider console) reveals the exact layer of failure and points to targeted mitigation. Always test connectivity from multiple network paths before assuming an infrastructure problem.
