@@ -1,0 +1,27 @@
+# T-Pot Analyser Configuration
+# Copy to config.yml and fill in real values.
+# config.yml is gitignored — never commit real credentials.
+
+elasticsearch:
+  hosts:
+    - "http://localhost:9200"   # Via SSH tunnel to T-Pot
+  username: "elastic"
+  password: "CHANGE_ME_ES_PASSWORD"
+  verify_certs: false
+
+ollama:
+  # If running Ollama on Windows and analyser in WSL2:
+  #   Run scripts/refresh-ollama-host.sh to auto-detect and set this.
+  # If running both on the same OS, use: http://localhost:11434
+  base_url: "http://localhost:11434"
+  model: "llama3.2:3b"
+  timeout: 120
+
+report:
+  output_dir: "../reports"
+  format: "markdown"
+
+collection_window:
+  daily_hours: 24
+  weekly_hours: 168
+  monthly_hours: 720

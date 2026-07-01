@@ -17,7 +17,10 @@ __pycache__/
 *.pyo
 .venv/
 venv/
-.env
+
+# Analyser config secrets
+analyzer/config.yml
+!analyzer/config.example.yml
 
 # Secrets and keys
 *.pem
