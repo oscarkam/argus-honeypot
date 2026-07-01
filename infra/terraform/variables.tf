@@ -21,3 +21,9 @@ variable "admin_source_ip" {
   type        = string
   # Will be set via terraform.tfvars (which is gitignored) — do not hardcode here
 }
+
+variable "root_disk_size_gb" {
+  description = "EC2 root volume size in GB (T-Pot HIVE requires 128GB minimum)"
+  type        = number
+  default     = 128
+}
