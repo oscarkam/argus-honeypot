@@ -47,3 +47,14 @@
 **Long-term mitigation under evaluation**: AWS Systems Manager Session Manager (SSM) would provide IAM-authenticated shell access via HTTPS (port 443) through the AWS regional endpoint, eliminating the port 22 dependency. This would allow admin access from any network permitting outbound HTTPS, including campus WiFi. Requires adding an IAM role, instance profile, and SSM agent configuration to the Terraform config. Estimated setup: 15 minutes; deferred to a Phase 2 enhancement to avoid disrupting the current build sprint.
 
 **Lesson learned**: When a TCP-level test succeeds but application-level handshake hangs, the culprit is typically an application-layer proxy or DPI firewall. Layered diagnostic (`nc` → `ssh -v` → cloud provider console) reveals the exact layer of failure and points to targeted mitigation. Always test connectivity from multiple network paths before assuming an infrastructure problem.
+
+## Pitfall 5: Terraform Applied Before Committing to Version Control
+**Date**: 1 July 2026
+**Phase**: 1 Build Sprint — cloud infrastructure provisioning
+**What happened**: Terraform code for the security group, EC2 instance, outputs, and a subsequent disk-size change was written, validated, and applied to live AWS infrastructure without first being committed to the git repository. Discovery came incidentally during a routine `git status` before an unrelated commit, revealing four files (`compute.tf`, `security.tf`, `outputs.tf`, plus a modified `variables.tf`) as untracked or unstaged despite having produced the running cloud environment.
+
+**Impact**: Medium — the running infrastructure had no reproducible source-of-truth on any remote (GitHub). A laptop failure or disk corruption between apply and commit would have orphaned the running resources, requiring manual reverse-engineering from the AWS Console to reconstruct the Terraform config. No actual loss occurred because the gap was detected within the same working session.
+
+**Response**: Immediately staged and committed all uncommitted Terraform files in a single logically-grouped commit with a message explicitly noting the "applied but previously uncommitted" state, pushed to origin. Verified `git status` clean afterwards.
+
+**Lesson learned**: The correct order for IaC changes is always **commit → apply**, never **apply → commit later**. Even in a sprint under time pressure, `git add && git commit -m 'wip' && git push` before every `terraform apply` costs 20 seconds and guarantees the repo remains the single source of truth. Consider adding a pre-apply git-check habit: before typing `terraform apply`, run `git status` and refuse to proceed if the working tree isn't clean.
