@@ -86,3 +86,27 @@
 - First `terraform apply` succeeded — 7 AWS resources provisioned in 40 seconds
 - SSH connectivity to EC2 verified via mobile hotspot (campus network SSH block documented as Pitfall #4)
 - Instance vitals confirmed: 7.6 GiB RAM, 30 GB disk, egress working
+
+**Phase 2: Analyser + Dashboard + Live Capture** (in progress)
+
+### Day 1 (1 Jul 2026) outcomes (both Phase 1 and Phase 2)
+
+**Phase 1 completed today**:
+- Terraform authored, applied, and re-applied for 128GB disk resize (7 AWS resources live)
+- SSH connectivity verified via mobile hotspot; campus DPI SSH block documented (Pitfall #4)
+- Ansible controller config, inventory, connectivity playbook — all authored and syntax-validated
+- T-Pot install playbook (`install-tpot.yml`) fully authored covering filesystem resize, system prep, T-Pot clone, non-interactive install, post-install guidance
+- Secrets scaffolding via example-and-real pattern with `.gitignore` protection
+
+**Phase 2 started today**:
+- Python analyser scaffold (`analyzer/`) with venv + requirements
+- WSL2→Windows Ollama bridge diagnosed and fixed (Pitfall #6)
+- End-to-end Python→Ollama chain proven working (`llama3.2:3b` responded coherently to CP-relevant prompt)
+- Two idempotent ops scripts authored: `refresh-admin-ip.sh` (targeted SG update) and `refresh-ollama-host.sh` (analyzer config sync)
+
+### Outstanding for tonight (home network required)
+- [x] `ansible honeypot -m ping` — verify connectivity
+- [x] `ansible-playbook install-tpot.yml` — deploy T-Pot (~20-40 min)
+- [ ] Post-reboot: update `inventory.yml` port 22 → 64295
+- [ ] Verify Kibana at `https://47.129.9.195:64297`
+- [ ] Screenshot Kibana as viva artifact

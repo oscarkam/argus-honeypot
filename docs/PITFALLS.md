@@ -58,3 +58,18 @@
 **Response**: Immediately staged and committed all uncommitted Terraform files in a single logically-grouped commit with a message explicitly noting the "applied but previously uncommitted" state, pushed to origin. Verified `git status` clean afterwards.
 
 **Lesson learned**: The correct order for IaC changes is always **commit → apply**, never **apply → commit later**. Even in a sprint under time pressure, `git add && git commit -m 'wip' && git push` before every `terraform apply` costs 20 seconds and guarantees the repo remains the single source of truth. Consider adding a pre-apply git-check habit: before typing `terraform apply`, run `git status` and refuse to proceed if the working tree isn't clean.
+
+## Pitfall 6: WSL2 `localhost` ≠ Windows `localhost` for Ollama Bridge
+**Date**: 1 July 2026
+**Phase**: 2 Build — LLM analyser scaffolding
+**What happened**: The initial `analyzer.py --test-ollama` smoke test failed with `Connection refused` when trying to reach `http://localhost:11434`. Ollama was running and healthy on Windows — verified with `curl http://localhost:11434/api/tags` from PowerShell — yet WSL2 could not reach it via the same URL.
+
+**Root cause**: WSL2 runs in its own virtual network with its own loopback interface. `localhost` from inside WSL2 resolves to WSL2's own loopback, NOT the Windows host's loopback where Ollama was listening. Additionally, Ollama's default binding is `127.0.0.1:11434` (Windows loopback only), which even a correctly-addressed request from WSL2 could not reach.
+
+**Response**: Two coordinated fixes.
+1. On Windows: set persistent user env var `OLLAMA_HOST=0.0.0.0` and restart Ollama, causing it to listen on all interfaces (verified via `netstat -an | findstr :11434` showing `0.0.0.0:11434 LISTENING`).
+2. In WSL2: retrieved Windows host IP via `ip route show default | awk '{print $3}'` → `172.30.192.1`. Updated `analyzer/config.yml` `ollama.base_url` to `http://172.30.192.1:11434`.
+
+**Long-term mitigation**: Windows host IP as seen from WSL2 can change on Windows reboots or `wsl --shutdown`. Idempotent helper script `scripts/refresh-ollama-host.sh` was authored to auto-detect current Windows IP, verify Ollama reachability, and update `analyzer/config.yml` in place.
+
+**Lesson learned**: When Python code inside WSL2 needs to reach a service on the Windows host, both a binding change (service listens on `0.0.0.0`) and an address change (use the WSL2 default gateway IP, not `localhost`) are required. Common pattern for Docker Desktop, database GUIs, LM Studio, etc.
