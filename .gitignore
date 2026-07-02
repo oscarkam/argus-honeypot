@@ -35,7 +35,7 @@ desktop.ini
 
 # IDE
 .idea/
-.vscode/settings.json
+.vscode/*.local.json
 
 # Logs
 *.log

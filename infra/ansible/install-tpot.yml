@@ -114,21 +114,17 @@
     # ------------------------------------------------------------
     # STAGE 5: Run T-Pot installer (long-running, async)
     # ------------------------------------------------------------
-    - name: Run T-Pot installer non-interactively (this takes ~15-30 minutes)
+    - name: Run T-Pot installer non-interactively (HIVE flavor, ~15-30 minutes)
       ansible.builtin.shell:
-        cmd: ./install.sh --type=user --conf=tpot.conf
+        cmd: ./install.sh -s -t h -u "{{ tpot_web_user }}" -p "{{ tpot_web_pass }}"
         chdir: "{{ tpot_dir }}"
       environment:
         DEBIAN_FRONTEND: noninteractive
-      async: 2700   # Allow up to 45 minutes
-      poll: 60      # Check every minute
+      async: 2700
+      poll: 60
       register: install_result
-      failed_when: false  # Don't fail if installer reboots the box mid-way
-
-    - name: Display installer stdout tail
-      ansible.builtin.debug:
-        var: install_result.stdout_lines
-      when: install_result.stdout_lines is defined
+      no_log: true    # prevents password appearing in Ansible output
+      failed_when: false
 
     # ------------------------------------------------------------
     # STAGE 6: Guidance (installer triggers its own reboot)
