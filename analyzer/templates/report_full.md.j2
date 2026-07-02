@@ -1,0 +1,186 @@
+---
+title: "Detailed Threat Intelligence Report — {{ report_date }}"
+author: "Automated Threat Intelligence System"
+date: "{{ report_date }}"
+---
+
+# Detailed Threat Intelligence Report
+
+**Reporting window:** {{ window_start }} to {{ window_end }} ({{ window_hours }} hours)
+**Data source:** T-Pot Community Edition v24.04 honeypot deployment
+**Prepared for:** Internal security analyst / incident responder
+
+---
+
+## 1. Executive Summary
+
+{{ llm_narrative_section_1 }}
+
+## 2. Methodology and Data Sources
+
+This report is generated automatically from a T-Pot HIVE honeypot deployment
+consisting of Cowrie (SSH/Telnet), Dionaea (SMB/malware), Heralding (credential
+capture), Snare/Tanner (web attacks), Honeytrap (arbitrary TCP), and FATT
+(fingerprinting) sensors. Attack telemetry is indexed in an internal Elasticsearch
+instance and queried via the Analyser pipeline. Session-level events are
+classified against:
+
+- **MITRE ATT&CK** — for attacker technique identification
+- **Lockheed Martin Cyber Kill Chain** — for attack stage classification
+- **NIST Cybersecurity Framework** — for recommendation structuring
+
+Narrative interpretation is provided by a locally-hosted large language model
+(llama3.2:3b via Ollama). No cloud LLM services are invoked; all raw log data
+remains on the analyst workstation.
+
+## 3. Attack Volume and Geography
+
+**Total sessions in window:** {{ data.total_attacks | number_format }}
+**Unique source IPs:** {{ data.unique_source_ips | number_format }}
+
+{{ llm_narrative_section_2 }}
+
+### Top Origin Countries
+
+| # | Country | Sessions | % of total |
+|---|---------|----------|------------|
+{% for c in data.top_source_countries[:10] %}
+| {{ loop.index }} | {{ c.country }} | {{ c.count | number_format }} | {{ c.percentage }}% |
+{% endfor %}
+
+![Geographic distribution]({{ chart_geo }})
+
+## 4. Service Targeting Analysis
+
+### Top Attacked Ports and Services
+
+| # | Port | Service | Attempts | % of total |
+|---|------|---------|----------|------------|
+{% for p in data.top_attacked_ports[:10] %}
+| {{ loop.index }} | {{ p.port }} | {{ p.service }} | {{ p.count | number_format }} | {{ p.percentage }}% |
+{% endfor %}
+
+![Port targeting]({{ chart_ports }})
+
+### Hourly Attack Volume Trend
+
+![Hourly trend]({{ chart_hourly }})
+
+## 5. MITRE ATT&CK Technique Mapping
+
+The following techniques were observed in captured attacker command sequences.
+Each command was regex-matched against a curated knowledge base of ~35 common
+Linux post-compromise patterns.
+
+### Technique Frequency
+
+| Technique ID | Technique Name | Tactic | Observations |
+|--------------|----------------|--------|--------------|
+{% for tid, meta in mitre_technique_freq.items() %}
+| {{ tid }} | {{ meta.name }} | {{ meta.tactic }} | {{ meta.count }} |
+{% endfor %}
+
+### Tactic Heatmap (Navigator-Style)
+
+![MITRE ATT&CK heatmap]({{ chart_mitre_heatmap }})
+
+{{ llm_narrative_section_3 }}
+
+## 6. Cyber Kill Chain Stage Analysis
+
+Sessions were classified against the Lockheed Martin Cyber Kill Chain based on
+observed indicators (successful authentication, command execution, file downloads,
+persistence attempts, C2 indicators, and encryption/staging behaviours).
+
+### Stage Distribution
+
+| Stage | Sessions | % of total |
+|-------|----------|------------|
+{% for stage, count in kill_chain_distribution.items() if count > 0 %}
+| {{ stage }} | {{ count | number_format }} | {{ (100 * count / data.total_attacks) | round(1) }}% |
+{% endfor %}
+
+![Kill Chain distribution]({{ chart_kill_chain }})
+
+## 7. Notable Sessions — Forensic Detail
+
+{{ llm_narrative_section_4 }}
+
+### Session Highlights
+
+{% for session in data.notable_sessions[:5] %}
+- **Session {{ loop.index }}:** {{ session }}
+{% endfor %}
+
+## 8. Indicators of Compromise (IOCs)
+
+The following IOCs were extracted from this reporting window and are suitable
+for direct import into perimeter firewalls, EDR blocklists, or SIEM watch lists.
+
+### Top Attacker Source IPs
+
+| IP | Sessions | Country |
+|----|----------|---------|
+{% for ip in data.top_source_ips[:10] %}
+| {{ ip.ip }} | {{ ip.count }} | {{ ip.country }} |
+{% endfor %}
+
+### Captured Malware Hashes
+
+{% if data.malware_hashes %}
+| SHA-256 | Filename | Sensor |
+|---------|----------|--------|
+{% for h in data.malware_hashes %}
+| `{{ h.sha256 }}` | {{ h.filename }} | {{ h.sensor }} |
+{% endfor %}
+{% else %}
+*No malware samples captured in this window.*
+{% endif %}
+
+## 9. Detection Rule Recommendations
+
+{{ llm_narrative_section_5 }}
+
+## 10. NIST CSF-Aligned Recommendations
+
+{% for func in ["Identify", "Protect", "Detect", "Respond", "Recover"] %}
+### {{ func }}
+
+{% for rec in recommendations if rec.function == func %}
+**{{ rec.category }} — {{ rec.title }}** *(Priority: {{ rec.priority }})*
+
+{{ rec.detail }}
+
+*Trigger:* {{ rec.evidence }}
+
+{% endfor %}
+{% endfor %}
+
+## 11. Baseline and Trend Analysis
+
+{% if baseline_available %}
+Comparison against the previous {{ baseline_window }}h window:
+
+- Volume change: {{ volume_change_percent }}%
+- New source countries this window: {{ new_countries | join(", ") if new_countries else "none" }}
+- New ATT&CK techniques observed: {{ new_techniques | join(", ") if new_techniques else "none" }}
+{% else %}
+*Baseline comparison unavailable — insufficient historical data. This section will
+populate automatically once ≥2 windows of capture have been recorded.*
+{% endif %}
+
+## Appendix A — Roadmap Toward STIX/TAXII Integration
+
+The framework mappings in this report (MITRE ATT&CK technique IDs, IOC lists,
+observed patterns) are structurally compatible with the STIX 2.1 data model.
+A future iteration of this analyser could emit `Indicator`, `Observed-Data`, and
+`Threat-Actor` STIX objects for consumption by an OpenCTI or MISP instance,
+enabling correlation of this deployment's observations with wider industry
+threat feeds. This work is deferred to a future development cycle.
+
+---
+
+*Report generated: {{ generated_at }}. Data pipeline: T-Pot → Elasticsearch →
+Analyser → Ollama LLM narrative → Markdown/PDF output. Framework mappings are
+rules-based; refinement through analyst feedback is expected as this system
+matures.*

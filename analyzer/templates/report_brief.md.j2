@@ -1,0 +1,62 @@
+---
+title: "Honeypot Threat Brief — {{ report_date }}"
+author: "Automated Threat Intelligence System"
+date: "{{ report_date }}"
+---
+
+# Honeypot Threat Brief
+
+**Reporting window:** {{ window_start }} to {{ window_end }} ({{ window_hours }} hours)
+**Prepared for:** SME / non-profit internal review
+**Prepared by:** Automated honeypot analyser
+
+---
+
+## The 24-Hour Story
+
+{{ llm_narrative_section_1 }}
+
+## By the Numbers
+
+|  |  |
+|---|---|
+| **Total attack sessions** | {{ data.total_attacks | number_format }} |
+| **Unique source IPs** | {{ data.unique_source_ips | number_format }} |
+| **Countries represented** | {{ data.top_source_countries | length }}+ |
+| **Malware samples captured** | {{ data.malware_captured | default(0) }} |
+| **Sessions with attempted post-authentication activity** | {{ kill_chain_distribution.get("Exploitation", 0) + kill_chain_distribution.get("Installation", 0) + kill_chain_distribution.get("Command and Control", 0) + kill_chain_distribution.get("Actions on Objectives", 0) }} |
+
+## Where the Attacks Are Coming From
+
+![Attack origin — top countries]({{ chart_geo }})
+
+## What Attackers Are Trying
+
+{{ llm_narrative_section_2 }}
+
+![Service targeting — most-attacked ports]({{ chart_ports }})
+
+## The Bottom Line
+
+{{ llm_narrative_section_3 }}
+
+---
+
+## Recommended Actions (NIST Cybersecurity Framework)
+
+*This report's recommendations align with the NIST Cybersecurity Framework — an
+industry-standard structure organizing security controls into five core functions.*
+
+{% for rec in recommendations %}
+### {{ loop.index }}. [{{ rec.function }} · {{ rec.category }}] {{ rec.title }}
+
+**Priority:** {{ rec.priority }}
+**Why now:** {{ rec.evidence }}
+
+{{ rec.detail }}
+
+{% endfor %}
+
+---
+
+*Report generated: {{ generated_at }}. This is an automated analysis based on {{ window_hours }}h of honeypot telemetry. Human review is recommended before acting on any specific recommendation.*

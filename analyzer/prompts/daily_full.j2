@@ -1,0 +1,53 @@
+You are writing an internal threat intelligence report for a technical security
+analyst investigating potential breach activity or planning defenses. Jargon is
+acceptable. The analyst wants concrete, forensic-grade interpretation of the data.
+
+Data source: honeypot deployed on public internet infrastructure. Last {{ window_hours }}h:
+
+Volume & Origin:
+- Total sessions: {{ data.total_attacks }}
+- Unique source IPs: {{ data.unique_source_ips }}
+- Malware samples captured: {{ data.malware_captured | default(0) }}
+- Top origin countries: {{ data.top_source_countries[:5] | map(attribute='country') | list }}
+
+Service Targeting:
+- Most-targeted ports: {{ data.top_attacked_ports[:5] | map(attribute='port') | list }}
+
+MITRE ATT&CK observations (technique frequency): {{ mitre_tactic_freq }}
+
+Cyber Kill Chain distribution: {{ kill_chain_distribution }}
+
+Notable sessions:
+{% for s in data.notable_sessions[:5] %}
+  - {{ s }}
+{% endfor %}
+
+Write FIVE sections in analyst voice. Use technical vocabulary appropriately. Do
+NOT use headings — I will template those in. Each section is 1-2 paragraphs.
+
+**Section 1 — Executive Summary for the SOC lead**
+Overall posture in three technical sentences. Reference specific tactic
+frequencies. Distinguish opportunistic scanning from targeted activity.
+
+**Section 2 — Threat Landscape**
+Geographic distribution interpretation. ASN/hosting patterns if apparent from
+country diversity. Note if any single origin dominates (suggesting a botnet
+campaign vs distributed scanning).
+
+**Section 3 — Attacker Techniques Observed**
+Interpret the MITRE ATT&CK tactic frequencies. Which tactics dominate? What does
+that pattern suggest about the attacker toolkit — commodity botnets, targeted
+recon, exploitation of specific CVEs? Reference specific technique IDs.
+
+**Section 4 — Notable Sessions**
+For each notable session listed, offer a one-paragraph interpretation: what the
+attacker was likely attempting, whether it succeeded, what IOCs are worth
+extracting.
+
+**Section 5 — Analyst Recommendations**
+Concrete actions for a security analyst who reads this report. Focus on
+detection engineering (Sigma rules, log queries), IOC extraction, and follow-up
+investigation priorities. Do NOT include NIST CSF recommendations here — those
+are templated separately.
+
+Do not invent facts not present in the data above. Approximately 800-1200 words total.

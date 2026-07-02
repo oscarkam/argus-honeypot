@@ -42,3 +42,11 @@ desktop.ini
 
 # Ollama models (large)
 *.gguf
+
+# Generated reports (may contain sensitive real-attack data)
+analyzer/reports/*.md
+analyzer/reports/*.pdf
+analyzer/reports/*.docx
+analyzer/reports/*.png
+!analyzer/reports/README.md
+!analyzer/reports/.gitkeep

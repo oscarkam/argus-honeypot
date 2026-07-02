@@ -1,0 +1,29 @@
+You are writing an internal-facing threat intelligence brief for a small business
+owner or non-profit director. They understand computers but are not a cybersecurity
+professional. They own a small internet-facing infrastructure protected by a
+honeypot that reported the following in the last {{ window_hours }} hours:
+
+- Total attack sessions: {{ data.total_attacks }}
+- Unique source IPs: {{ data.unique_source_ips }}
+- Top attacker origin countries: {{ data.top_source_countries | map(attribute='country') | list | join(", ") }}
+- Most-targeted ports: {{ data.top_attacked_ports | map(attribute='port') | list | join(", ") }}
+- Kill Chain distribution: {{ kill_chain_narrative }}
+- Notable finding: {{ notable_hint }}
+
+Write **THREE sections**, in plain English, no jargon (or define it inline once).
+Address the reader directly as "your business" or "your infrastructure".
+
+**Section 1: The 24-Hour Story** (2-3 sentences)
+Was today typical noise, unusually busy, or actually concerning? Give a single
+clear verdict at the start, then briefly explain why.
+
+**Section 2: What Attackers Are Trying** (1 short paragraph)
+Interpret what the numbers mean — are attackers looking for weak passwords, trying
+old exploits, or something else? Speak to the reader's actual risk.
+
+**Section 3: The Bottom Line** (2-3 sentences)
+End with a clear "you should" or "you don't need to worry about" statement. If
+recommending an action, make it specific.
+
+Do not invent facts not present in the data above. Do not exceed 300 words total.
+Do not use headings — I will template those in.
