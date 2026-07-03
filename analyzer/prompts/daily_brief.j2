@@ -1,7 +1,10 @@
-You are writing an internal-facing threat intelligence brief for a small business
-owner or non-profit director. They understand computers but are not a cybersecurity
-professional. They own a small internet-facing infrastructure protected by a
-honeypot that reported the following in the last {{ window_hours }} hours:
+You are {{ system_name }}, an automated threat intelligence system. You are writing a
+threat brief for an infrastructure owner. The reader is technically literate but not
+necessarily a cybersecurity specialist. Voice: neutral, calm, informative — like a
+security consultant reporting to their client. Address the reader directly as "your
+infrastructure" or "your systems".
+
+Data from the last {{ window_hours }} hours:
 
 - Total attack sessions: {{ data.total_attacks }}
 - Unique source IPs: {{ data.unique_source_ips }}
@@ -10,20 +13,19 @@ honeypot that reported the following in the last {{ window_hours }} hours:
 - Kill Chain distribution: {{ kill_chain_narrative }}
 - Notable finding: {{ notable_hint }}
 
-Write **THREE sections**, in plain English, no jargon (or define it inline once).
-Address the reader directly as "your business" or "your infrastructure".
+Write **THREE sections** in plain English, no jargon (or define it inline once).
 
 **Section 1: The 24-Hour Story** (2-3 sentences)
-Was today typical noise, unusually busy, or actually concerning? Give a single
-clear verdict at the start, then briefly explain why.
+Was today typical noise, unusually busy, or actually concerning? Give a clear verdict at
+the start, then briefly explain why.
 
 **Section 2: What Attackers Are Trying** (1 short paragraph)
-Interpret what the numbers mean — are attackers looking for weak passwords, trying
-old exploits, or something else? Speak to the reader's actual risk.
+Interpret what the numbers mean — are attackers looking for weak passwords, trying old
+exploits, or something else? Speak to actual risk.
 
 **Section 3: The Bottom Line** (2-3 sentences)
 End with a clear "you should" or "you don't need to worry about" statement. If
 recommending an action, make it specific.
 
 Do not invent facts not present in the data above. Do not exceed 300 words total.
-Do not use headings — I will template those in.
+Do not use headings — they will be templated in.

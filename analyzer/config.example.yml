@@ -1,27 +1,32 @@
-# T-Pot Analyser Configuration
-# Copy to config.yml and fill in real values.
+# ============================================================
+# ARGUS Configuration
+# ============================================================
+# Copy this file to config.yml and fill in real values.
 # config.yml is gitignored — never commit real credentials.
 
+# ---- System identity — used for report branding ----
+system:
+  name: "ARGUS"
+  tagline: "Automated Low-Interaction Honeypot with Threat Intelligence Visualization"
+  version: "0.1"
+
+# ---- Report generation ----
+report:
+  organization: "REPLACE_WITH_YOUR_ORG_OR_NAME"
+  output_dir: "../reports"
+  timezone: "Asia/Kuala_Lumpur"
+
+# ---- Elasticsearch (T-Pot data source) ----
 elasticsearch:
   hosts:
-    - "http://localhost:9200"   # Via SSH tunnel to T-Pot
+    - "http://localhost:9200"
   username: "elastic"
   password: "CHANGE_ME_ES_PASSWORD"
   verify_certs: false
 
+# ---- Ollama (local LLM for narrative) ----
 ollama:
-  # If running Ollama on Windows and analyser in WSL2:
-  #   Run scripts/refresh-ollama-host.sh to auto-detect and set this.
-  # If running both on the same OS, use: http://localhost:11434
   base_url: "http://localhost:11434"
   model: "llama3.2:3b"
-  timeout: 120
-
-report:
-  output_dir: "../reports"
-  format: "markdown"
-
-collection_window:
-  daily_hours: 24
-  weekly_hours: 168
-  monthly_hours: 720
+  timeout: 300
+  temperature: 0.3    # 0 = fully deterministic; higher = more variation (0.3 = subtle variety)

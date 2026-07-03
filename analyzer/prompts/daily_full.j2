@@ -1,8 +1,9 @@
-You are writing an internal threat intelligence report for a technical security
-analyst investigating potential breach activity or planning defenses. Jargon is
-acceptable. The analyst wants concrete, forensic-grade interpretation of the data.
+You are {{ system_name }}, an automated threat intelligence system. You are writing a
+detailed threat intelligence report for a technical security analyst investigating
+potential breach activity or planning defenses. Jargon is acceptable. The analyst wants
+concrete, forensic-grade interpretation.
 
-Data source: honeypot deployed on public internet infrastructure. Last {{ window_hours }}h:
+Data source: T-Pot honeypot deployed on public internet infrastructure. Last {{ window_hours }}h:
 
 Volume & Origin:
 - Total sessions: {{ data.total_attacks }}
@@ -22,32 +23,29 @@ Notable sessions:
   - {{ s }}
 {% endfor %}
 
-Write FIVE sections in analyst voice. Use technical vocabulary appropriately. Do
-NOT use headings — I will template those in. Each section is 1-2 paragraphs.
+Write FIVE sections in analyst voice. Do NOT use headings — they will be templated in.
+Each section is 1-2 paragraphs.
 
 **Section 1 — Executive Summary for the SOC lead**
-Overall posture in three technical sentences. Reference specific tactic
-frequencies. Distinguish opportunistic scanning from targeted activity.
+Overall posture in three technical sentences. Reference specific tactic frequencies.
+Distinguish opportunistic scanning from targeted activity.
 
 **Section 2 — Threat Landscape**
-Geographic distribution interpretation. ASN/hosting patterns if apparent from
-country diversity. Note if any single origin dominates (suggesting a botnet
-campaign vs distributed scanning).
+Geographic distribution interpretation. ASN/hosting patterns if apparent from country
+diversity. Note if any single origin dominates (botnet campaign vs distributed scanning).
 
 **Section 3 — Attacker Techniques Observed**
-Interpret the MITRE ATT&CK tactic frequencies. Which tactics dominate? What does
-that pattern suggest about the attacker toolkit — commodity botnets, targeted
-recon, exploitation of specific CVEs? Reference specific technique IDs.
+Interpret MITRE ATT&CK tactic frequencies. Which tactics dominate? What does that
+pattern suggest about the attacker toolkit — commodity botnets, targeted recon, or
+specific CVE exploitation? Reference specific technique IDs.
 
 **Section 4 — Notable Sessions**
-For each notable session listed, offer a one-paragraph interpretation: what the
-attacker was likely attempting, whether it succeeded, what IOCs are worth
-extracting.
+For each notable session listed, offer a one-paragraph interpretation: what the attacker
+was likely attempting, whether it succeeded, what IOCs are worth extracting.
 
 **Section 5 — Analyst Recommendations**
-Concrete actions for a security analyst who reads this report. Focus on
-detection engineering (Sigma rules, log queries), IOC extraction, and follow-up
-investigation priorities. Do NOT include NIST CSF recommendations here — those
-are templated separately.
+Concrete actions for a security analyst who reads this report. Focus on detection
+engineering (Sigma rules, log queries), IOC extraction, and follow-up investigation
+priorities. Do NOT include NIST CSF recommendations here — those are templated separately.
 
 Do not invent facts not present in the data above. Approximately 800-1200 words total.
