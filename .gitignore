@@ -50,3 +50,11 @@ analyzer/reports/*.docx
 analyzer/reports/*.png
 !analyzer/reports/README.md
 !analyzer/reports/.gitkeep
+
+# Analyser reports at project root (may contain sensitive real-attack data)
+reports/*.md
+reports/*.pdf
+reports/*.docx
+reports/charts_*/
+!reports/README.md
+!reports/.gitkeep
