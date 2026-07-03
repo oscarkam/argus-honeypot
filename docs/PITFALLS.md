@@ -73,3 +73,20 @@
 **Long-term mitigation**: Windows host IP as seen from WSL2 can change on Windows reboots or `wsl --shutdown`. Idempotent helper script `scripts/refresh-ollama-host.sh` was authored to auto-detect current Windows IP, verify Ollama reachability, and update `analyzer/config.yml` in place.
 
 **Lesson learned**: When Python code inside WSL2 needs to reach a service on the Windows host, both a binding change (service listens on `0.0.0.0`) and an address change (use the WSL2 default gateway IP, not `localhost`) are required. Common pattern for Docker Desktop, database GUIs, LM Studio, etc.
+
+## Pitfall 7: AWS Account Placed on Hold Mid-Deployment
+**Date**: 3 July 2026
+**Phase**: 1 operational continuity / 2 real-data pipeline blocked
+**What happened**: While attempting to remediate a transient system-status-check failure on the EC2 honeypot instance via stop/start, the AWS Console returned "This account is currently blocked and not recognized as a valid account." Review of email archives revealed an "AWS Account on Hold: Response Required" notification sent 1 July 2026 — 48 hours prior — requesting additional identity verification that was inadvertently missed.
+
+**Root cause**: AWS's automated new-account verification workflow flagged the account for additional review. This is common for accounts that (a) are less than a week old, (b) provision internet-facing compute immediately, and (c) run security groups with broad ingress rules (as honeypots legitimately require). The initial verification email was routed to a low-priority inbox folder and not acted upon within the 48-hour response window.
+
+**Impact**: Medium. Cloud infrastructure inaccessible until account is unblocked. Approximately 400 attack sessions captured to date remain safely persisted on the stopped instance's EBS volume. All code, reports, and analyser development continued locally without interruption via stub-mode data. Support case 178307193900483 filed with academic context and supporting documentation.
+
+**Response**:
+1. Support case filed within one hour of discovery, referencing student status, project scope, university supervisor, and public GitHub repository as academic-integrity evidence.
+2. Analyser development continued locally using `--stub` mode; branding, framework integration, and template iteration progressed independently.
+3. Elastic IP and AWS Systems Manager Session Manager Terraform code authored proactively during the wait — ready to apply the moment access is restored.
+4. Pitfall documented for future defensive reference.
+
+**Lesson learned**: Two related lessons. First, **monitor the AWS root-account email address actively** during a new account's first two weeks — verification requests are time-sensitive and account holds are fully preventable with a same-day response. Second, **design cloud research infrastructure to survive short-duration cloud-provider access loss**: keeping analyser code, reports, and analysis pipelines runnable against stub or exported data ensures development continuity even during upstream service disruptions. This principle also generalizes to cloud outages, regional failures, and provider migration scenarios — real-world operational resilience concerns for any production research deployment.

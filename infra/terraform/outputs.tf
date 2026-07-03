@@ -1,6 +1,6 @@
 output "honeypot_public_ip" {
-  description = "Public IPv4 of the honeypot EC2 instance"
-  value       = aws_instance.honeypot.public_ip
+  description = "Persistent public IPv4 of the honeypot (Elastic IP)"
+  value       = aws_eip.honeypot.public_ip
 }
 
 output "honeypot_instance_id" {
@@ -9,11 +9,16 @@ output "honeypot_instance_id" {
 }
 
 output "ssh_command_admin" {
-  description = "SSH command to reach T-Pot management shell (port 64295, not 22)"
-  value       = "ssh -i ~/.ssh/cp2_honeypot_ed25519 -p 64295 ubuntu@${aws_instance.honeypot.public_ip}"
+  description = "SSH to T-Pot management shell (post-install port 64295)"
+  value       = "ssh -i ~/.ssh/cp2_honeypot_ed25519 -p 64295 ubuntu@${aws_eip.honeypot.public_ip}"
 }
 
 output "kibana_dashboard_url" {
-  description = "T-Pot Kibana admin dashboard URL (accessible after T-Pot install completes)"
-  value       = "https://${aws_instance.honeypot.public_ip}:64297"
+  description = "T-Pot Kibana admin dashboard URL"
+  value       = "https://${aws_eip.honeypot.public_ip}:64297"
+}
+
+output "ssm_session_command" {
+  description = "AWS SSM Session Manager command for HTTPS-based shell access (bypasses campus SSH block)"
+  value       = "aws ssm start-session --target ${aws_instance.honeypot.id} --region ap-southeast-1"
 }

@@ -1,12 +1,9 @@
 # ============================================================
 # Data source: Latest Ubuntu 24.04 LTS AMI (Canonical official)
-# Using a data source instead of a hardcoded AMI ID means our
-# deployment automatically picks up the latest patched image
-# every time we run terraform apply — better security posture
 # ============================================================
 data "aws_ami" "ubuntu_24_04" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical's official AWS account ID
+  owners      = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
@@ -21,8 +18,6 @@ data "aws_ami" "ubuntu_24_04" {
 
 # ============================================================
 # EC2 Instance — the T-Pot honeypot host
-# Instance type from variables.tf (default: t3.large — 2 vCPU, 8GB RAM)
-# meets T-Pot CE 24.04 minimum requirements (8GB RAM for ELK stack)
 # ============================================================
 resource "aws_instance" "honeypot" {
   ami                    = data.aws_ami.ubuntu_24_04.id
@@ -30,9 +25,8 @@ resource "aws_instance" "honeypot" {
   subnet_id              = aws_subnet.honeypot_public.id
   vpc_security_group_ids = [aws_security_group.honeypot.id]
   key_name               = var.key_pair_name
+  iam_instance_profile   = aws_iam_instance_profile.honeypot.name
 
-  # T-Pot needs disk headroom for indexed logs + captured artifacts
-  # 32GB gp3 = ~$2.56/month while running; sufficient for a 5-day capture window
   root_block_device {
     volume_size = var.root_disk_size_gb
     volume_type = "gp3"
@@ -43,8 +37,6 @@ resource "aws_instance" "honeypot" {
     }
   }
 
-  # Enforce instance metadata service v2 (IMDSv2) — protects against
-  # SSRF-style token theft that plagued IMDSv1
   metadata_options {
     http_tokens   = "required"
     http_endpoint = "enabled"
