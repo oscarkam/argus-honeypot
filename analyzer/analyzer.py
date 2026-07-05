@@ -62,13 +62,25 @@ def call_ollama(prompt: str, model: str, base_url: str,
     return response.json()["response"]
 
 
-# ---------------------------------------------------------------- ES (stub for now)
+# ---------------------------------------------------------------- ES 
 def query_elasticsearch(config: dict, hours: int) -> Dict[str, Any]:
-    """Query T-Pot Elasticsearch. STUB — real implementation is a next-session task."""
-    return {"total_attacks": 0, "unique_source_ips": 0, "top_source_countries": [],
-            "top_attacked_ports": [], "top_credentials_attempted": [],
-            "top_source_ips": [], "notable_sessions": [], "malware_hashes": [],
-            "hourly_trend": [], "session_details": [], "all_commands": []}
+    """Query T-Pot Elasticsearch via es_client.py."""
+    from es_client import TpotEsClient
+
+    es_cfg = config["elasticsearch"]
+    client = TpotEsClient(
+        hosts=es_cfg["hosts"],
+        username=es_cfg.get("username", ""),
+        password=es_cfg.get("password", ""),
+        verify_certs=es_cfg.get("verify_certs", False),
+        timeout=30,
+    )
+    if not client.ping():
+        raise RuntimeError(
+            "Elasticsearch not reachable at "
+            f"{es_cfg['hosts']}. Is the SSH tunnel running?"
+        )
+    return client.query_window(hours=hours)
 
 
 # ---------------------------------------------------------------- Stub data
@@ -300,8 +312,8 @@ def print_banner(system: dict) -> None:
     version = system["version"]
     bar = "═" * (max(len(tagline), 60) + 4)
     print(f"╔{bar}╗")
-    print(f"║  {name} v{version}".ljust(len(bar) + 2) + "  ║")
-    print(f"║  {tagline}".ljust(len(bar) + 2) + "  ║")
+    print(f"║  {name} v{version}".ljust(len(bar) + 1) + "║")
+    print(f"║  {tagline}".ljust(len(bar) + 1) + "║")
     print(f"╚{bar}╝")
 
 

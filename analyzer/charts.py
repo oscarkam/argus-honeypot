@@ -144,24 +144,28 @@ def plot_attack_tactics_heatmap(heatmap_data: Dict, filepath: str, theme: str = 
         techs = tech_per[tactic]
         for row_idx, (tid, tname, count) in enumerate(techs[:max_rows]):
             grid[row_idx, col_idx] = count
-            labels[row_idx][col_idx] = tid
+            labels[row_idx][col_idx] = f"{tid}\n({count})"
 
-    fig_w = max(len(tactics) * 1.05, 12)
-    fig_h = max(max_rows * 0.6 + 2, 5)
+    fig_w = max(len(tactics) * 1.1, 12)
+    fig_h = max(max_rows * 0.9 + 2, 5)
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 
     from matplotlib.colors import LinearSegmentedColormap
-    # Gradient: panel bg → primary blue → negative crimson (heat intensifies)
+    # Cells with data start visibly at the primary blue and intensify to negative red
     cmap = LinearSegmentedColormap.from_list(
-        "aurora_ops", [t["panel"], t["primary"], t["negative"]]
+        "aurora_ops", [t["primary"], t["accent"], t["negative"]]
     )
-    im = ax.imshow(grid, cmap=cmap, vmin=0, vmax=max_count, aspect="auto")
+    # Mask cells with 0 count — they'll render as panel bg
+    grid_masked = np.ma.masked_equal(grid, 0)
+    cmap.set_bad(t["panel"])
+    im = ax.imshow(grid_masked, cmap=cmap, vmin=1, vmax=max_count, aspect="auto")
 
+    # Overlay technique IDs + counts in cells that have data
     for r in range(max_rows):
         for c in range(len(tactics)):
             if labels[r][c]:
                 ax.text(c, r, labels[r][c], ha="center", va="center",
-                        color=t["text"], fontsize=7)
+                        color=t["text"], fontsize=8, fontweight="bold")
 
     ax.set_xticks(np.arange(len(tactics)))
     ax.set_xticklabels(tactics, rotation=45, ha="right", fontsize=9, color=t["text"])
