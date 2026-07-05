@@ -3,7 +3,7 @@ all:
     honeypot:
       hosts:
         tpot_host:
-          ansible_host: 47.129.9.195
+          ansible_host: 3.1.46.106
           ansible_port: 64295
           ansible_user: ubuntu
           ansible_ssh_private_key_file: ~/.ssh/cp2_honeypot_ed25519
