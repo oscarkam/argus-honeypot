@@ -380,11 +380,25 @@ def main() -> int:
     filepath = run_pipeline(config, data, args.style, args.period, hours, output_dir, args.theme)
 
     print(f"\n✓ Report written: {filepath}")
-    pdf_path = filepath.replace(".md", ".pdf")
-    print(f"  PDF:  pandoc '{filepath}' -o '{pdf_path}' --pdf-engine=xelatex")
-    print(f"  DOCX: pandoc '{filepath}' -o '{filepath.replace('.md', '.docx')}'")
-    return 0
 
+    # --- Real PDF/DOCX render (was previously print-only) ---
+    from exporters import render_pdf, render_docx
+    
+    md_path_obj = Path(filepath)
+
+    pdf_out, pdf_err = render_pdf(md_path_obj)
+    if pdf_out:
+        print(f"  ✓ PDF:  {pdf_out}")
+    else:
+        print(f"  ✗ PDF failed: {pdf_err}")
+
+    docx_out, docx_err = render_docx(md_path_obj)
+    if docx_out:
+        print(f"  ✓ DOCX: {docx_out}")
+    else:
+        print(f"  ✗ DOCX failed: {docx_err}")
+
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())
