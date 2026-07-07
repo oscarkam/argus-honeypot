@@ -74,7 +74,7 @@ def render():
                 options=["brief", "full"],
                 index=0,
                 horizontal=True,
-                format_func=lambda x: "Brief (SME executive)" if x == "brief" else "Full (analyst detail)",
+                format_func=lambda x: "Brief (Executive Summary)" if x == "brief" else "Full (Analyst Detail)",
                 help="Brief ≈ 3 pages; Full ≈ 10-15 pages with full framework tables + IOCs",
             )
         with col2:

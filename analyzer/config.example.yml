@@ -30,3 +30,10 @@ ollama:
   model: "llama3.2:3b"
   timeout: 300
   temperature: 0.3    # 0 = fully deterministic; higher = more variation (0.3 = subtle variety)
+
+tpot:
+  host: "3.1.46.106"     # Elastic IP — permanent
+  ports:
+    kibana: 64297        # Kibana dashboard + Attack Map (nginx auth)
+    cockpit: 64294       # System management UI
+    ssh: 64295           # Management SSH

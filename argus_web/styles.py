@@ -420,6 +420,135 @@ hr { border-color: var(--grid); margin: 1.5rem 0; }
     line-height: 1.3;
     font-weight: 500;
 }
+/* ---- Report Archive rows ---- */
+.report-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.report-name {
+    color: var(--text);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+.report-name i {
+    color: var(--secondary);
+    margin-right: 0.2rem;
+}
+.report-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.badge {
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.64rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+.badge.period {
+    background: rgba(76, 125, 255, 0.14);
+    color: var(--primary);
+    border: 1px solid rgba(76, 125, 255, 0.28);
+}
+.badge.style {
+    background: rgba(167, 139, 250, 0.14);
+    color: var(--secondary);
+    border: 1px solid rgba(167, 139, 250, 0.28);
+}
+.badge.theme {
+    background: rgba(196, 168, 245, 0.14);
+    color: var(--accent);
+    border: 1px solid rgba(196, 168, 245, 0.28);
+}
+.report-date {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.report-size {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    background: var(--grid);
+    padding: 0.18rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ---- T-Pot Bridge cards ---- */
+.bridge-card-link {
+    text-decoration: none !important;
+    color: inherit !important;
+    display: block;
+    height: 100%;
+}
+.bridge-card {
+    background: var(--panel);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--grid);
+    transition: all 0.25s ease;
+    height: 100%;
+    min-height: 200px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    cursor: pointer;
+}
+.bridge-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(76,125,255,0.22);
+}
+.bridge-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.10), transparent);
+    transition: left 0.7s ease;
+    pointer-events: none;
+}
+.bridge-card:hover::before { left: 100%; }
+.bridge-card .card-icon {
+    font-size: 1.9rem;
+    color: var(--secondary);
+    margin-bottom: 0.6rem;
+    display: block;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+.bridge-card:hover .card-icon {
+    transform: scale(1.15) rotate(6deg);
+    color: var(--primary);
+}
+.bridge-card h4 {
+    color: var(--text) !important;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+}
+.bridge-card p {
+    color: var(--text-dim) !important;
+    font-size: 0.9rem;
+    margin: 0 0 1.2rem 0;
+    line-height: 1.5;
+}
+.bridge-card .btn-hint {
+    color: var(--primary) !important;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
 </style>
 """
 

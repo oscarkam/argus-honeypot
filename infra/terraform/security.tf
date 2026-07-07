@@ -28,6 +28,14 @@ resource "aws_security_group" "honeypot" {
     cidr_blocks = [var.admin_source_ip]
   }
 
+  ingress {
+    description = "T-Pot Cockpit (system management)"
+    from_port   = 64294
+    to_port     = 64294
+    protocol    = "tcp"
+    cidr_blocks = [var.admin_source_ip]
+  }
+
   # ---------- DECEPTION PLANE (public — adversary-facing) ----------
   ingress {
     description = "SSH honeypot (Cowrie)"
