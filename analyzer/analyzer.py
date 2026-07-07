@@ -29,6 +29,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Any
 from zoneinfo import ZoneInfo
+from naming import build_report_filename, build_chart_dir_name
 
 import requests
 import yaml
@@ -167,8 +168,15 @@ def generate_stub_data(hours: int = 24) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------- Pipeline
-def run_pipeline(config: dict, data: Dict[str, Any], style: str,
-                 hours: int, output_dir: str, theme: str = "dark") -> str:
+def run_pipeline(
+    config: dict,
+    data: Dict[str, Any],
+    style: str,
+    period: str,
+    hours: int,
+    output_dir: str,
+    theme: str = "dark",
+) -> str:
     system = config["system"]
     org = config["report"]["organization"]
     tz = ZoneInfo(config["report"].get("timezone", "UTC"))
@@ -207,8 +215,10 @@ def run_pipeline(config: dict, data: Dict[str, Any], style: str,
         )
 
     # ---- Charts ----
-    ts = datetime.now(tz).strftime("%Y%m%d_%H%M%S")
-    chart_dir = Path(output_dir) / f"charts_{ts}_{theme}"
+    now = datetime.now(tz)
+    ts = now.strftime("%Y%m%d_%H%M%S")
+    chart_dir_name = build_chart_dir_name(period=period, theme=theme, timestamp=now)
+    chart_dir = Path(output_dir) / chart_dir_name
     chart_dir.mkdir(parents=True, exist_ok=True)
 
     chart_geo = charts.plot_geo_origins(data["top_source_countries"], str(chart_dir / "geo.png"), theme=theme)
@@ -299,7 +309,14 @@ def run_pipeline(config: dict, data: Dict[str, Any], style: str,
     # ---- Save ----
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    filename = f"{system['name'].lower()}_{style}_{theme}_{ts}.md"
+    filename = build_report_filename(
+        system_name=system["name"],
+        period=period,
+        style=style,
+        theme=theme,
+        timestamp=now,
+        extension="md",
+    )
     filepath = output_path / filename
     filepath.write_text(report_body)
     return str(filepath)
@@ -360,7 +377,7 @@ def main() -> int:
             return 1
 
     output_dir = config["report"]["output_dir"]
-    filepath = run_pipeline(config, data, args.style, hours, output_dir, args.theme)
+    filepath = run_pipeline(config, data, args.style, args.period, hours, output_dir, args.theme)
 
     print(f"\n✓ Report written: {filepath}")
     pdf_path = filepath.replace(".md", ".pdf")
