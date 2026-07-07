@@ -19,8 +19,8 @@ from views import home, report_studio, reports_archive, tpot_bridge, system_heal
 # Brand assets
 # ---------------------------------------------------------------------------
 STATIC_DIR = _ROOT / "static"
-LOGO_PATH = STATIC_DIR / "argus_mark.png"          # transparent, aspect-preserved
-FAVICON_PATH = STATIC_DIR / "argus_mark.png"        # ← now uses the big transparent mark
+LOGO_PATH = STATIC_DIR / "argus_mark.png"
+FAVICON_PATH = STATIC_DIR / "argus_favicon.png"
 
 
 def _img_b64(path: Path) -> str:
@@ -32,7 +32,7 @@ LOGO_B64 = _img_b64(LOGO_PATH)
 
 
 # ---------------------------------------------------------------------------
-# Page config (favicon uses the ARGUS mark, transparent)
+# Page config (favicon uses the ARGUS mark)
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="ARGUS Control Center",
@@ -46,7 +46,7 @@ config = load_argus_config()
 
 
 # ---------------------------------------------------------------------------
-# Brand-specific CSS (self-contained)
+# Brand-specific CSS (self-contained — no styles.py edit needed)
 # ---------------------------------------------------------------------------
 st.markdown(
     """
@@ -76,6 +76,25 @@ st.markdown(
         letter-spacing: 4px;
         line-height: 1;
     }
+
+    /* Persistent logo shown only when sidebar is collapsed */
+    .argus-persistent-logo {
+        position: fixed;
+        top: 12px;
+        left: 60px;    /* clears Streamlit's expand-arrow */
+        z-index: 999990;
+        width: 34px;
+        height: 26px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.35));
+    }
+    /* Streamlit sets aria-expanded="false" on the sidebar when collapsed */
+    body:has([data-testid="stSidebar"][aria-expanded="false"]) .argus-persistent-logo {
+        opacity: 1;
+        pointer-events: auto;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -83,23 +102,18 @@ st.markdown(
 
 
 # ---------------------------------------------------------------------------
-# Navigation state — must be resolved BEFORE option_menu renders so the
-# sidebar highlight reflects the actual current page.
-#
-# Order of precedence per rerun:
-#   1. ?page= query param (from sidebar header click or Explore card click)
-#   2. st.session_state["current_page"] (persisted from previous rerun)
-#   3. Default → "Home"
+# Persistent logo (visible when the sidebar is collapsed)
 # ---------------------------------------------------------------------------
-VALID_PAGES = ["Home", "Report Studio", "Reports Archive", "T-Pot Bridge", "System Health"]
-
-_page_param = st.query_params.get("page")
-if _page_param in VALID_PAGES:
-    st.session_state["current_page"] = _page_param
-    st.query_params.clear()
-
-_current_page = st.session_state.get("current_page", "Home")
-_default_idx = VALID_PAGES.index(_current_page)
+st.markdown(
+    f"""
+    <a href="?page=Home" target="_self">
+        <img src="data:image/png;base64,{LOGO_B64}"
+             class="argus-persistent-logo"
+             alt="ARGUS — return to Home"/>
+    </a>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +137,13 @@ with st.sidebar:
 
     selected = option_menu(
         menu_title=None,
-        options=VALID_PAGES,
+        options=[
+            "Home",
+            "Report Studio",
+            "Reports Archive",
+            "T-Pot Bridge",
+            "System Health",
+        ],
         icons=[
             "house-fill",
             "file-earmark-text",
@@ -131,9 +151,7 @@ with st.sidebar:
             "broadcast-pin",
             "activity",
         ],
-        default_index=_default_idx,
-        manual_select=_default_idx,
-        key=f"main_nav_{_current_page}",   # key rotates → force re-init when page changes
+        default_index=0,
         styles={
             "container": {"padding": "0!important", "background-color": "transparent"},
             "icon": {"color": "#A78BFA", "font-size": "17px"},
@@ -153,7 +171,7 @@ with st.sidebar:
         },
     )
 
-    # Session context footer — preserved
+    # Session context footer — preserved from before
     st.markdown(
         '<div class="sidebar-footer">'
         '<p class="footer-heading">Session Context</p>'
@@ -177,14 +195,11 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
-# Persist user's manual sidebar click for the next rerun. If user clicked a
-# menu item (not an Explore card), option_menu's return diverges from the
-# session_state we just set — accept the click and rerun so default_index
-# reflects it on the next pass.
+# Click-to-Home: consume the query param set by logo/wordmark clicks
 # ---------------------------------------------------------------------------
-if selected != _current_page:
-    st.session_state["current_page"] = selected
-    st.rerun()
+if st.query_params.get("page") == "Home":
+    selected = "Home"
+    st.query_params.clear()
 
 
 # ---------------------------------------------------------------------------

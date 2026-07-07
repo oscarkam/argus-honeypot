@@ -16,15 +16,17 @@ from config import load_argus_config
 
 def render():
     st.markdown(
-        '<div class="section-heading">'
-        '<i class="bi bi-activity"></i>'
-        '&nbsp;System Health'
+        '<div class="page-header">'
+        '<div class="page-header-titlerow">'
+        '<span class="page-header-icon"><i class="bi bi-activity"></i></span>'
+        '<h1 class="page-header-title">System Health</h1>'
+        '</div>'
+        '<p class="page-header-desc">'
+        'Detailed real-time infrastructure status — SSH tunnel, Elasticsearch cluster, '
+        'Ollama LLM runtime, T-Pot honeypot, and AWS infrastructure.'
+        '</p>'
         '</div>',
         unsafe_allow_html=True,
-    )
-    st.caption(
-        "Detailed real-time infrastructure status — SSH tunnel, Elasticsearch cluster, "
-        "Ollama LLM runtime, T-Pot honeypot, and AWS infrastructure."
     )
 
     # -------- Refresh controls --------

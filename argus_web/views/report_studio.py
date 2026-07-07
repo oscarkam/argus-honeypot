@@ -23,16 +23,19 @@ PERIOD_HOURS = {"daily": 24, "weekly": 168, "monthly": 720}
 def render():
     # -------- Header --------
     st.markdown(
-        '<div class="section-heading">'
-        '<i class="bi bi-file-earmark-text"></i>'
-        '&nbsp;Report Studio'
+        '<div class="page-header">'
+        '<div class="page-header-titlerow">'
+        '<span class="page-header-icon"><i class="bi bi-file-earmark-text"></i></span>'
+        '<h1 class="page-header-title">Report Studio</h1>'
+        '</div>'
+        '<p class="page-header-desc">'
+        'Generate a threat intelligence report from live honeypot telemetry. '
+        'Reports include framework mappings '
+        '(<code>MITRE ATT&amp;CK</code>, <code>Cyber Kill Chain</code>, <code>NIST CSF</code>), '
+        'themed charts, and LLM-generated prose narrative.'
+        '</p>'
         '</div>',
         unsafe_allow_html=True,
-    )
-    st.caption(
-        "Generate a threat intelligence report from live honeypot telemetry. "
-        "Reports include framework mappings (MITRE ATT&CK, Cyber Kill Chain, NIST CSF), "
-        "themed charts, and LLM-generated prose narrative."
     )
 
     # -------- Preflight — health check --------

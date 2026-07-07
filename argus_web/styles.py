@@ -549,6 +549,276 @@ hr { border-color: var(--grid); margin: 1.5rem 0; }
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+
+/* === ARGUS sidebar header (logo + wordmark) === */
+.argus-sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 4px 20px;
+    text-decoration: none !important;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(74, 158, 255, 0.15);
+    margin-bottom: 12px;
+    transition: opacity 0.2s ease;
+}
+.argus-sidebar-header:hover {
+    opacity: 0.85;
+}
+.argus-sidebar-logo {
+    width: 44px;
+    height: 34px;   /* preserves 1.29:1 aspect */
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(74, 158, 255, 0.25));
+}
+.argus-sidebar-wordmark {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    color: #4A9EFF;
+    letter-spacing: 4px;
+    line-height: 1;
+}
+
+/* === Persistent logo when sidebar is collapsed === */
+.argus-persistent-logo {
+    position: fixed;
+    top: 10px;
+    left: 60px;         /* clears Streamlit's expand-arrow button */
+    z-index: 999990;
+    width: 34px;
+    height: 26px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+/* Streamlit sets aria-expanded=false on the sidebar when collapsed */
+[data-testid="stSidebar"][aria-expanded="false"] ~ * .argus-persistent-logo,
+body:has([data-testid="stSidebar"][aria-expanded="false"]) .argus-persistent-logo {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* === Sidebar — flatter, less "boxed" === */
+[data-testid="stSidebar"] {
+    background: #0A0E27 !important;
+    border-right: 1px solid rgba(167, 139, 250, 0.08);
+}
+
+/* Kill the option_menu container background — let it sit flush */
+[data-testid="stSidebar"] .nav-container,
+[data-testid="stSidebar"] div[class*="nav-container"] {
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Softer selected state — reads as "focused" not "shouted" */
+[data-testid="stSidebar"] .nav-link-selected {
+    background: linear-gradient(90deg,
+        rgba(76, 125, 255, 0.18),
+        rgba(167, 139, 250, 0.10)) !important;
+    color: #EEEBFA !important;
+    border-left: 3px solid #A78BFA;
+    padding-left: 9px !important;   /* compensate for border */
+    box-shadow: none !important;
+}
+
+/* Version caption + separator */
+[data-testid="stSidebar"] .stCaptionContainer,
+[data-testid="stSidebar"] p.stMarkdown small {
+    color: rgba(238, 235, 250, 0.5);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Session Context footer — remove the boxed feel */
+.sidebar-footer {
+    background: transparent;
+    border: none;
+    border-top: 1px solid rgba(167, 139, 250, 0.10);
+    padding: 20px 4px 0;
+    margin-top: 24px;
+}
+.sidebar-footer .footer-heading {
+    font-family: 'Space Grotesk', sans-serif;
+    color: rgba(167, 139, 250, 0.7);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+.sidebar-footer .footer-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.sidebar-footer .footer-item i {
+    color: #A78BFA;
+    font-size: 15px;
+    margin-top: 2px;
+}
+.sidebar-footer .footer-label {
+    color: rgba(238, 235, 250, 0.55);
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0 0 2px;
+}
+.sidebar-footer .footer-value {
+    color: #EEEBFA;
+    font-size: 13.5px;
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.35;
+}
+
+/* ===================================================================== */
+/* === Standardized page header (Report Studio, Archive, Bridge, etc.) === */
+/* ===================================================================== */
+.page-header {
+    padding: 12px 0 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(167, 139, 250, 0.10);
+}
+.page-header-titlerow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+.page-header-icon {
+    color: var(--secondary);
+    font-size: 30px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    filter: drop-shadow(0 0 10px rgba(167, 139, 250, 0.30));
+    animation: subtle-glow 3.5s ease-in-out infinite;
+}
+.page-header-title {
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text);
+    font-size: 30px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.3px;
+    line-height: 1.15;
+}
+.page-header-desc {
+    color: rgba(238, 235, 250, 0.72);
+    font-size: 15px;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 780px;
+}
+.page-header-desc code {
+    background: rgba(167, 139, 250, 0.14);
+    color: var(--secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ===================================================================== */
+/* === Explore section — clickable cards routing via query params === */
+/* ===================================================================== */
+.explore-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 24px 0 16px;
+}
+.explore-heading i {
+    color: var(--secondary);
+    font-size: 22px;
+    animation: subtle-glow 3.5s ease-in-out infinite;
+}
+.explore-heading h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+}
+.explore-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+}
+@media (max-width: 1100px) {
+    .explore-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.explore-card {
+    display: block;
+    background: linear-gradient(160deg,
+        rgba(76, 125, 255, 0.06),
+        rgba(167, 139, 250, 0.04));
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    border-radius: 14px;
+    padding: 22px 20px 20px;
+    text-decoration: none !important;
+    color: inherit !important;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    overflow: hidden;
+}
+.explore-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.10), transparent);
+    transition: left 0.7s ease;
+    pointer-events: none;
+}
+.explore-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(167, 139, 250, 0.45);
+    box-shadow: 0 10px 30px rgba(76, 125, 255, 0.14);
+}
+.explore-card:hover::before { left: 100%; }
+.explore-card-icon {
+    color: var(--secondary);
+    font-size: 26px;
+    margin-bottom: 14px;
+    transition: transform 0.3s ease, color 0.3s ease;
+    display: block;
+}
+.explore-card:hover .explore-card-icon {
+    transform: scale(1.10) rotate(4deg);
+    color: var(--primary);
+}
+.explore-card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 8px;
+}
+.explore-card-desc {
+    color: rgba(238, 235, 250, 0.68);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 18px;
+    min-height: 58px;
+}
+.explore-card-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.explore-card-cta i { font-size: 18px; }
 </style>
 """
 

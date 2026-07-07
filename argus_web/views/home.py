@@ -18,14 +18,16 @@ def _status_card(label: str, icon: str, up: bool) -> str:
     )
 
 
-def _action_card(icon: str, title: str, blurb: str) -> str:
+def _explore_card(page: str, icon: str, title: str, blurb: str) -> str:
+    """Clickable card that routes to `page` via query param."""
+    href = f"?page={page.replace(' ', '+')}"
     return (
-        f'<div class="action-card">'
-        f'<i class="bi {icon} card-icon"></i>'
-        f'<h4>{title}</h4>'
-        f'<p>{blurb}</p>'
-        f'<span class="btn-hint">Use the sidebar →</span>'
-        f'</div>'
+        f'<a href="{href}" target="_self" class="explore-card">'
+        f'<i class="bi {icon} explore-card-icon"></i>'
+        f'<h3 class="explore-card-title">{title}</h3>'
+        f'<p class="explore-card-desc">{blurb}</p>'
+        f'<span class="explore-card-cta">Open <i class="bi bi-arrow-right-short"></i></span>'
+        f'</a>'
     )
 
 
@@ -88,48 +90,43 @@ def render():
 
     st.markdown("---")
 
-    # -------- Explore action cards --------
+    # -------- Explore — clickable cards routing via query params --------
     st.markdown(
-        '<div class="section-heading"><i class="bi bi-compass"></i>&nbsp;Explore</div>',
+        '<div class="explore-heading">'
+        '<i class="bi bi-compass"></i>'
+        '<h2>Explore</h2>'
+        '</div>',
         unsafe_allow_html=True,
     )
-    q1, q2, q3, q4 = st.columns(4)
-    with q1:
-        st.markdown(
-            _action_card(
-                "bi-file-earmark-text",
-                "Report Studio",
-                "Generate a fresh threat intelligence report from live honeypot data — Brief or Analyst detail.",
-            ),
-            unsafe_allow_html=True,
+    explore_html = (
+        '<div class="explore-grid">'
+        + _explore_card(
+            "Report Studio",
+            "bi-file-earmark-text",
+            "Report Studio",
+            "Generate a fresh threat intelligence report from live honeypot data — Brief or Analyst detail.",
         )
-    with q2:
-        st.markdown(
-            _action_card(
-                "bi-archive-fill",
-                "Reports Archive",
-                "Browse and download previously generated reports in Markdown, PDF, or DOCX.",
-            ),
-            unsafe_allow_html=True,
+        + _explore_card(
+            "Reports Archive",
+            "bi-archive-fill",
+            "Reports Archive",
+            "Browse and download previously generated reports in Markdown, PDF, or DOCX.",
         )
-    with q3:
-        st.markdown(
-            _action_card(
-                "bi-broadcast-pin",
-                "T-Pot Bridge",
-                "Direct links to live Kibana dashboards, geographic attack map, and system Cockpit.",
-            ),
-            unsafe_allow_html=True,
+        + _explore_card(
+            "T-Pot Bridge",
+            "bi-broadcast-pin",
+            "T-Pot Bridge",
+            "Direct links to live Kibana dashboards, geographic attack map, and Elasticvue explorer.",
         )
-    with q4:
-        st.markdown(
-            _action_card(
-                "bi-activity",
-                "System Health",
-                "Infrastructure status: SSH tunnel, Elasticsearch cluster, Ollama LLM, and EC2 instance.",
-            ),
-            unsafe_allow_html=True,
+        + _explore_card(
+            "System Health",
+            "bi-activity",
+            "System Health",
+            "Infrastructure status: SSH tunnel, Elasticsearch cluster, Ollama LLM, and EC2 instance.",
         )
+        + '</div>'
+    )
+    st.markdown(explore_html, unsafe_allow_html=True)
 
     # -------- Footer --------
     st.markdown("---")

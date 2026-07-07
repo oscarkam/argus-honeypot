@@ -5,15 +5,19 @@ from config import load_argus_config
 
 def render():
     st.markdown(
-        '<div class="section-heading">'
-        '<i class="bi bi-broadcast-pin"></i>'
-        '&nbsp;T-Pot Bridge'
+        '<div class="page-header">'
+        '<div class="page-header-titlerow">'
+        '<span class="page-header-icon"><i class="bi bi-broadcast-pin"></i></span>'
+        '<h1 class="page-header-title">T-Pot Bridge</h1>'
+        '</div>'
+        '<p class="page-header-desc">'
+        'Direct links to live T-Pot infrastructure — Kibana, Attack Map, '
+        'Elasticvue, and CyberChef. All links open in a new tab. '
+        'T-Pot uses self-signed HTTPS certificates — accept the browser warning '
+        'on first visit per site.'
+        '</p>'
         '</div>',
         unsafe_allow_html=True,
-    )
-    st.caption(
-        "Direct links to live T-Pot infrastructure. All links open in a new tab. "
-        "T-Pot uses self-signed HTTPS certificates — accept the browser warning on first visit per site."
     )
 
     config = load_argus_config()

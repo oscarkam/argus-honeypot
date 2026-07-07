@@ -15,15 +15,18 @@ REPORTS_DIR = Path(__file__).parent.parent.parent / "reports"
 
 def render():
     st.markdown(
-        '<div class="section-heading">'
-        '<i class="bi bi-archive-fill"></i>'
-        '&nbsp;Reports Archive'
+        '<div class="page-header">'
+        '<div class="page-header-titlerow">'
+        '<span class="page-header-icon"><i class="bi bi-archive-fill"></i></span>'
+        '<h1 class="page-header-title">Reports Archive</h1>'
+        '</div>'
+        '<p class="page-header-desc">'
+        'Browse and download previously generated ARGUS reports. '
+        'Reports follow naming convention: '
+        '<code>SYSTEM_period_style_theme_YYYYMMDD_HHMMSS</code>.'
+        '</p>'
         '</div>',
         unsafe_allow_html=True,
-    )
-    st.caption(
-        "Browse and download previously generated ARGUS reports. "
-        "Reports follow naming convention: SYSTEM_period_style_theme_YYYYMMDD_HHMMSS."
     )
 
     if not REPORTS_DIR.exists():
