@@ -61,3 +61,7 @@ echo ""
 echo "╔═══════════════════════════════════════════════════════╗"
 echo "║  Ready. Run: cd analyzer && source .venv/bin/activate ║"
 echo "╚═══════════════════════════════════════════════════════╝"
+
+echo "→ Next: start ARGUS Control Center with:"
+echo "     ./scripts/argus-web-start.sh"
+echo ""
