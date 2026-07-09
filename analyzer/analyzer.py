@@ -35,9 +35,9 @@ import requests
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from frameworks.mitre_mapper import MitreMapper
-from frameworks.kill_chain import KillChainClassifier, KILL_CHAIN_STAGES
-from frameworks.nist_csf import NistCsfGenerator
+from frameworks.mitre_mapper import MitreMapper, mitre_link, mitre_tactic_link
+from frameworks.kill_chain import KillChainClassifier, KILL_CHAIN_STAGES, kill_chain_link
+from frameworks.nist_csf import NistCsfGenerator, csf_link
 import charts
 
 
@@ -92,6 +92,7 @@ def generate_stub_data(hours: int = 24) -> Dict[str, Any]:
     return {
         "total_attacks": 1847,
         "unique_source_ips": 342,
+        "unique_countries": 47,
         "malware_captured": 2,
         "top_source_countries": [
             {"country": "China", "count": 612, "percentage": 33.1},
@@ -226,6 +227,7 @@ def run_pipeline(
     chart_hourly = charts.plot_hourly_trend(data["hourly_trend"], str(chart_dir / "hourly.png"), theme=theme)
     chart_kill_chain = charts.plot_kill_chain_distribution(kc_distribution, str(chart_dir / "kill_chain.png"), theme=theme)
     chart_mitre_heatmap = charts.plot_attack_tactics_heatmap(heatmap_data, str(chart_dir / "mitre_heatmap.png"), theme=theme)
+    chart_ip_by_country = charts.plot_ip_by_country(data.get("top_source_ips", []), str(chart_dir / "ip_by_country.png"), theme=theme)
 
     # ---- LLM narrative ----
     prompts_env = Environment(
@@ -268,6 +270,14 @@ def run_pipeline(
         autoescape=select_autoescape(disabled_extensions=("j2",)),
     )
     env.filters["number_format"] = lambda n: f"{n:,}"
+
+    # Framework reference-link filters — used to hyperlink IDs in the report
+    # so readers can jump straight to canonical documentation.
+    env.filters["mitre_link"] = mitre_link
+    env.filters["mitre_tactic_link"] = mitre_tactic_link
+    env.filters["csf_link"] = csf_link
+    env.filters["kill_chain_link"] = kill_chain_link
+
     template = env.get_template(f"report_{style}.md.j2")
 
     now = datetime.now(tz)
@@ -299,6 +309,7 @@ def run_pipeline(
         "chart_hourly": os.path.relpath(chart_hourly, output_dir),
         "chart_kill_chain": os.path.relpath(chart_kill_chain, output_dir),
         "chart_mitre_heatmap": os.path.relpath(chart_mitre_heatmap, output_dir),
+        "chart_ip_by_country": os.path.relpath(chart_ip_by_country, output_dir),
         "baseline_available": False,
     }
     for i, sec in enumerate(sections, 1):

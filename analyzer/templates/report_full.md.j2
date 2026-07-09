@@ -1,7 +1,7 @@
 ---
-title: "{{ system_name }} Detailed Threat Report — {{ report_datetime }}"
+title: "{{ system_name }} Detailed Threat Report"
 author: "{{ system_name }} v{{ system_version }}"
-date: "{{ generated_at }}"
+date: "{{ report_datetime }}"
 ---
 
 # {{ system_name }} · Detailed Threat Report
@@ -9,9 +9,13 @@ date: "{{ generated_at }}"
 *{{ system_tagline }}*
 
 **Generated:** {{ report_datetime }}
+
 **Reporting window:** {{ window_start }} → {{ window_end }} ({{ window_hours }} hours)
+
 **Prepared for:** {{ organization }}
+
 **Prepared by:** {{ system_name }} v{{ system_version }}
+
 **Data source:** T-Pot Community Edition v24.04
 
 ---
@@ -29,9 +33,9 @@ captured by a T-Pot HIVE honeypot deployment consisting of Cowrie (SSH/Telnet), 
 internal Elasticsearch instance and queried by the {{ system_name }} pipeline. Session-level
 events are classified against:
 
-- **MITRE ATT&CK** — attacker technique identification
-- **Lockheed Martin Cyber Kill Chain** — attack stage classification
-- **NIST Cybersecurity Framework** — recommendation structuring
+- **[MITRE ATT&CK ↗]({{ '' | mitre_link }})** — attacker technique identification
+- **[Lockheed Martin Cyber Kill Chain ↗]({{ '' | kill_chain_link }})** — attack stage classification
+- **[NIST Cybersecurity Framework ↗]({{ '' | csf_link }})** — recommendation structuring
 
 Narrative interpretation is provided by a locally-hosted large language model (Llama 3.2
 via Ollama). No cloud LLM services are invoked; all raw log data remains on the analyst's
@@ -40,7 +44,10 @@ workstation.
 ## 3. Attack Volume and Geography
 
 **Total sessions in window:** {{ data.total_attacks | number_format }}
+
 **Unique source IPs:** {{ data.unique_source_ips | number_format }}
+
+**Unique countries:** {{ data.unique_countries | default(data.top_source_countries | length) }}
 
 {{ llm_narrative_section_2 }}
 
@@ -48,11 +55,19 @@ workstation.
 
 | # | Country | Sessions | % of total |
 |---|---------|----------|------------|
-{% for c in data.top_source_countries[:10] %}
+{%- for c in data.top_source_countries[:10] %}
 | {{ loop.index }} | {{ c.country }} | {{ c.count | number_format }} | {{ c.percentage }}% |
-{% endfor %}
+{%- endfor %}
 
 ![Geographic distribution]({{ chart_geo }})
+
+### Top Attacker IPs — Correlated with Country of Origin
+
+Individual attacker IPs, grouped visually by country of origin. Coordinated
+infrastructure emerging from the same origin will share a colour band, making
+peer clusters easy to spot at a glance.
+
+![Top attacker IPs, grouped by country]({{ chart_ip_by_country }})
 
 ## 4. Service Targeting Analysis
 
@@ -60,9 +75,9 @@ workstation.
 
 | # | Port | Service | Attempts | % of total |
 |---|------|---------|----------|------------|
-{% for p in data.top_attacked_ports[:10] %}
+{%- for p in data.top_attacked_ports[:10] %}
 | {{ loop.index }} | {{ p.port }} | {{ p.service }} | {{ p.count | number_format }} | {{ p.percentage }}% |
-{% endfor %}
+{%- endfor %}
 
 ![Port targeting]({{ chart_ports }})
 
@@ -70,18 +85,19 @@ workstation.
 
 ![Hourly trend]({{ chart_hourly }})
 
-## 5. MITRE ATT&CK Technique Mapping
+## 5. [MITRE ATT&CK ↗]({{ '' | mitre_link }}) Technique Mapping
 
 Techniques observed via regex-matching of captured command sequences against a curated
-knowledge base of common Linux post-compromise patterns.
+knowledge base of common Linux post-compromise patterns. Each Technique ID below links
+directly to the corresponding page in the official ATT&CK knowledge base.
 
 ### Technique Frequency
 
 | Technique ID | Technique Name | Tactic | Observations |
 |--------------|----------------|--------|--------------|
-{% for tid, meta in mitre_technique_freq.items() %}
-| {{ tid }} | {{ meta.name }} | {{ meta.tactic }} | {{ meta.count }} |
-{% endfor %}
+{%- for tid, meta in mitre_technique_freq.items() %}
+| [{{ tid }} ↗]({{ tid | mitre_link }}) | {{ meta.name }} | {{ meta.tactic }} | {{ meta.count }} |
+{%- endfor %}
 
 ### Tactic Heatmap (Navigator-Style)
 
@@ -89,18 +105,19 @@ knowledge base of common Linux post-compromise patterns.
 
 {{ llm_narrative_section_3 }}
 
-## 6. Cyber Kill Chain Stage Analysis
+## 6. [Cyber Kill Chain ↗]({{ '' | kill_chain_link }}) Stage Analysis
 
-Sessions classified against Lockheed Martin's Cyber Kill Chain based on observed
-indicators (auth success, command execution, file downloads, persistence, C2, staging).
+Sessions classified against Lockheed Martin's [Cyber Kill Chain ↗]({{ '' | kill_chain_link }})
+based on observed indicators (auth success, command execution, file downloads, persistence,
+C2, staging).
 
 ### Stage Distribution
 
 | Stage | Sessions | % of total |
 |-------|----------|------------|
-{% for stage, count in kill_chain_distribution.items() if count > 0 %}
+{%- for stage, count in kill_chain_distribution.items() if count > 0 %}
 | {{ stage }} | {{ count | number_format }} | {{ (100 * count / data.total_attacks) | round(1) }}% |
-{% endfor %}
+{%- endfor %}
 
 ![Kill Chain distribution]({{ chart_kill_chain }})
 
@@ -122,18 +139,18 @@ Extracted IOCs suitable for direct import into firewalls, EDR blocklists, or SIE
 
 | IP | Sessions | Country |
 |----|----------|---------|
-{% for ip in data.top_source_ips[:10] %}
+{%- for ip in data.top_source_ips[:10] %}
 | {{ ip.ip }} | {{ ip.count }} | {{ ip.country }} |
-{% endfor %}
+{%- endfor %}
 
 ### Captured Malware Hashes
 
 {% if data.malware_hashes %}
 | SHA-256 | Filename | Sensor |
 |---------|----------|--------|
-{% for h in data.malware_hashes %}
+{%- for h in data.malware_hashes %}
 | `{{ h.sha256 }}` | {{ h.filename }} | {{ h.sensor }} |
-{% endfor %}
+{%- endfor %}
 {% else %}
 *No malware samples captured in this window.*
 {% endif %}
@@ -142,13 +159,15 @@ Extracted IOCs suitable for direct import into firewalls, EDR blocklists, or SIE
 
 {{ llm_narrative_section_5 }}
 
-## 10. NIST CSF-Aligned Recommendations
+## 10. [NIST CSF ↗]({{ '' | csf_link }})-Aligned Recommendations
+
+Each subcategory ID below links to its canonical reference on `csf.tools`.
 
 {% for func in ["Identify", "Protect", "Detect", "Respond", "Recover"] %}
 ### {{ func }}
 
 {% for rec in recommendations if rec.function == func %}
-**{{ rec.category }} — {{ rec.title }}** *(Priority: {{ rec.priority }})*
+**[{{ rec.category }} ↗]({{ rec.category | csf_link }}) — {{ rec.title }}** *(Priority: {{ rec.priority }})*
 
 {{ rec.detail }}
 
@@ -179,7 +198,10 @@ observations with wider industry threat feeds.
 
 ---
 
-*Report generated by {{ system_name }} v{{ system_version }} — {{ system_tagline }} — at
-{{ generated_at }}. Pipeline: T-Pot → Elasticsearch → {{ system_name }} → Ollama LLM
-narrative → Markdown output. Framework mappings are rules-based; refinement through
-analyst feedback is expected as the system matures.*
+*Report generated by {{ system_name }} v{{ system_version }} — {{ system_tagline }}.*
+
+*Generated at {{ generated_at }}.*
+
+*Pipeline: T-Pot → Elasticsearch → {{ system_name }} → Ollama LLM narrative → Markdown output.*
+
+*Framework mappings are rules-based; refinement through analyst feedback is expected as the system matures.*

@@ -1,0 +1,40 @@
+% ARGUS PDF LaTeX header — included by pandoc via --include-in-header.
+% Purpose: fix visual polish issues in PDF output that don't affect DOCX/MD.
+
+% -----------------------------------------------------------------
+% 1. Wider text area — default 1in margins are too generous for the
+%    wide tables (Technique Frequency, Malware Hashes, IP list).
+%    0.75in gives ~1.5in more text width without looking cramped.
+% -----------------------------------------------------------------
+\usepackage[margin=0.75in]{geometry}
+
+% -----------------------------------------------------------------
+% 2. Center all longtables (pandoc uses longtable for tables that may
+%    span page breaks; default LaTeX aligns them to the LEFT margin
+%    which reads as "off-centered" against otherwise centered content).
+%    \fill on both sides = distribute equal filler space = centered.
+% -----------------------------------------------------------------
+\usepackage{longtable}
+\setlength{\LTleft}{\fill}
+\setlength{\LTright}{\fill}
+
+% -----------------------------------------------------------------
+% 3. Row height for readability (default is tight).
+% -----------------------------------------------------------------
+\renewcommand{\arraystretch}{1.15}
+
+% -----------------------------------------------------------------
+% 4. Smaller font inside longtables — critical for wide content
+%    (64-char SHA-256 hashes, long technique names) to fit within
+%    \textwidth without overflowing the right margin.
+% -----------------------------------------------------------------
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\small}
+
+% -----------------------------------------------------------------
+% 5. Prevent hyphenation of framework IDs (e.g. T1098.004) which
+%    would otherwise break awkwardly across lines. `\sloppy` lets
+%    LaTeX add extra inter-word space to avoid overflow lines.
+% -----------------------------------------------------------------
+\usepackage[none]{hyphenat}
+\sloppy

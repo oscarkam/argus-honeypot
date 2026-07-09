@@ -57,7 +57,7 @@ def render():
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Attack Sessions", f"{m['total_attacks']:,}")
         c2.metric("Unique Source IPs", f"{m['unique_ips']:,}")
-        c3.metric("Countries Represented", f"{m['countries']}+")
+        c3.metric("Countries Represented", f"{m['countries']}")
         c4.metric("Malware Captured", m["malware"])
     except Exception as e:
         st.error(f"Could not fetch metrics — is the SSH tunnel up? ({e})")

@@ -39,6 +39,24 @@ KILL_CHAIN_STAGES = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Reference URL helper — used by templates to hyperlink the framework
+# Lockheed Martin doesn't publish per-stage deep-links; single canonical URL.
+# ---------------------------------------------------------------------------
+_KILL_CHAIN_URL = (
+    "https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html"
+)
+
+
+def kill_chain_link(stage: str = "") -> str:
+    """Return the canonical Cyber Kill Chain reference URL.
+
+    The stage argument is accepted for consistency with mitre_link / csf_link
+    but ignored — Lockheed Martin only publishes a single overview page.
+    """
+    return _KILL_CHAIN_URL
+
+
 class KillChainClassifier:
     """Rules-based Cyber Kill Chain stage classifier for honeypot sessions."""
 

@@ -94,6 +94,39 @@ def plot_geo_origins(top_countries: List[Dict], filepath: str, theme: str = "dar
     return _save(fig, filepath, t)
 
 
+def plot_ip_by_country(top_ips: List[Dict], filepath: str, theme: str = "dark") -> str:
+    """Horizontal bar chart of top attacker IPs, with country appended to labels.
+
+    Each `top_ips` entry: {"ip": str, "count": int, "country": str}.
+    Rows are color-grouped by country so peer IPs from the same origin are
+    visually clustered — helps analysts spot coordinated infrastructure.
+    """
+    t = get_theme(theme)
+    top = list(reversed(top_ips[:10]))
+    labels = [f'{ip["ip"]}   ({ip.get("country", "?")})' for ip in top]
+    counts = [ip["count"] for ip in top]
+
+    # Color-cycle by country so shared-origin IPs cluster visually
+    country_colors = [t["primary"], t["secondary"], t["accent"], t["warning"], t["positive"]]
+    seen: Dict[str, str] = {}
+    colors = []
+    for ip in top:
+        c = ip.get("country", "?")
+        if c not in seen:
+            seen[c] = country_colors[len(seen) % len(country_colors)]
+        colors.append(seen[c])
+
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    bars = ax.barh(labels, counts, color=colors, edgecolor=t["bg"], linewidth=1.2)
+    for bar, count in zip(bars, counts):
+        ax.text(bar.get_width() + max(counts) * 0.01, bar.get_y() + bar.get_height() / 2,
+                f"{count:,}", va="center", color=t["text"], fontsize=9)
+    ax.set_xlabel("Attack sessions", fontsize=10)
+    ax.tick_params(axis="y", labelsize=9)
+    _apply_theme(ax, fig, t, "Top Attacker IPs — grouped by Origin Country")
+    return _save(fig, filepath, t)
+
+
 def plot_port_targeting(top_ports: List[Dict], filepath: str, theme: str = "dark") -> str:
     t = get_theme(theme)
     top = list(reversed(top_ports[:10]))

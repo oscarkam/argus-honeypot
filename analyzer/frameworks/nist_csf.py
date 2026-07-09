@@ -38,6 +38,30 @@ class Recommendation:
 CSF_FUNCTIONS = ["Identify", "Protect", "Detect", "Respond", "Recover"]
 
 
+# ---------------------------------------------------------------------------
+# Reference URL helpers — used by templates to hyperlink framework IDs
+# ---------------------------------------------------------------------------
+def csf_link(category: str) -> str:
+    """Return a hyperlink to the CSF subcategory reference.
+
+    Example: 'PR.AC-1' → https://csf.tools/reference/nist-cybersecurity-framework/v1-1/pr/pr-ac/pr-ac-1/
+    """
+    if not category or "." not in category:
+        return f"https://www.nist.gov/cyberframework"
+    # PR.AC-1 → pr/pr-ac/pr-ac-1
+    parts = category.lower().split(".")
+    if len(parts) < 2:
+        return "https://www.nist.gov/cyberframework"
+    function_prefix = parts[0]          # 'pr'
+    remainder = parts[1]                # 'ac-1'
+    category_slug = remainder.split("-")[0]   # 'ac'
+    return (
+        f"https://csf.tools/reference/nist-cybersecurity-framework/v1-1/"
+        f"{function_prefix}/{function_prefix}-{category_slug}/"
+        f"{function_prefix}-{remainder}/"
+    )
+
+
 class NistCsfGenerator:
     """Generates NIST CSF-aligned recommendations from observed threat patterns."""
 

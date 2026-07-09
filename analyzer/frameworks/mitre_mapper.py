@@ -20,6 +20,32 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 
+# ---------------------------------------------------------------------------
+# Reference URL helper — used by templates to hyperlink technique IDs
+# ---------------------------------------------------------------------------
+def mitre_link(technique_id: str) -> str:
+    """Return the canonical ATT&CK reference URL for a technique ID.
+
+    Examples:
+        'T1098'      → https://attack.mitre.org/techniques/T1098/
+        'T1098.004'  → https://attack.mitre.org/techniques/T1098/004/
+    """
+    if not technique_id:
+        return "https://attack.mitre.org"
+    tid = technique_id.strip().upper()
+    if "." in tid:
+        parent, sub = tid.split(".", 1)
+        return f"https://attack.mitre.org/techniques/{parent}/{sub}/"
+    return f"https://attack.mitre.org/techniques/{tid}/"
+
+
+def mitre_tactic_link(tactic_id: str) -> str:
+    """Return the reference URL for a tactic ID (e.g. 'TA0001')."""
+    if not tactic_id:
+        return "https://attack.mitre.org"
+    return f"https://attack.mitre.org/tactics/{tactic_id.strip().upper()}/"
+
+
 class MitreMapper:
     """Maps raw honeypot observations to MITRE ATT&CK techniques and tactics."""
 
