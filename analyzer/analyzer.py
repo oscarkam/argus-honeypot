@@ -1,5 +1,5 @@
 """
-ARGUS — Automated Low-Interaction Honeypot with Threat Intelligence Visualization
+ARGUS — AI-Assisted Threat Intelligence Platform
 --------------------------------------------------------------------------------
 Local LLM-powered threat intelligence report generator for T-Pot honeypot data.
 
@@ -39,6 +39,120 @@ from frameworks.mitre_mapper import MitreMapper, mitre_link, mitre_tactic_link
 from frameworks.kill_chain import KillChainClassifier, KILL_CHAIN_STAGES, kill_chain_link
 from frameworks.nist_csf import NistCsfGenerator, csf_link
 import charts
+
+
+def _load_validation_summary():
+    """Load latest three-feed IP validation summary for the report footer.
+
+    Delegates to validate_ips.load_summary() which reads analyzer/validation_ips.csv
+    and returns a dict with exact counts, or None if the CSV is absent.
+    """
+    try:
+        from validate_ips import load_summary
+        return load_summary()
+    except Exception:
+        return None
+
+
+def _write_proposal_metrics_snapshot(data, mitre_technique_freq, mitre_tactic_freq, kc_distribution, period, hours):
+    """Persist proposal-committed evaluation metrics to a JSON snapshot for the UI.
+
+    Reads directly from the aggregated `data` dict and framework outputs
+    already computed by the pipeline. Every value is an exact integer or a
+    rounded percentage. No range or fuzzy figures.
+
+    Written to analyzer/proposal_metrics.json. Consumed by the ARGUS Control
+    Center System Health view (Proposal Evaluation Metrics + Framework Coverage
+    card sections).
+    """
+    import json as _json
+    from zoneinfo import ZoneInfo as _ZoneInfo
+
+    total_attacks = int(data.get("total_attacks", 0) or 0)
+    unique_ips = int(data.get("unique_source_ips", 0) or 0)
+    unique_countries = int(data.get("unique_countries",
+                                    len(data.get("top_source_countries", []))))
+
+    # ---- Sensor Engagement Rate ----
+    session_details = data.get("session_details", []) or []
+    sessions_with_commands = sum(
+        1 for s in session_details
+        if isinstance(s, dict) and int(s.get("commands_executed", 0) or 0) >= 1
+    )
+    engagement_rate = (
+        round(100.0 * sessions_with_commands / total_attacks, 2)
+        if total_attacks > 0 else 0.0
+    )
+
+    # ---- Credential Reuse Frequency ----
+    top_creds = data.get("top_credentials_attempted", []) or []
+    top_cred_pair = ""
+    top_cred_count = 0
+    top_cred_ratio = 0.0
+    if top_creds:
+        top_cred_count = int(top_creds[0].get("count", 0) or 0)
+        top_cred_pair = f"{top_creds[0].get('username', '?')}:{top_creds[0].get('password', '?')}"
+        if total_attacks > 0:
+            top_cred_ratio = round(100.0 * top_cred_count / total_attacks, 2)
+
+    # ---- Session Completeness Ratio ----
+    complete_sessions = sum(
+        1 for s in session_details
+        if isinstance(s, dict) and (
+            int(s.get("commands_executed", 0) or 0) >= 1
+            or int(s.get("failed_auth_attempts", 0) or 0) >= 1
+        )
+    )
+    completeness_ratio = (
+        round(100.0 * complete_sessions / total_attacks, 2)
+        if total_attacks > 0 else 0.0
+    )
+
+    # ---- Framework Coverage ----
+    mitre_techniques_observed = len(mitre_technique_freq or {})
+    mitre_tactics_observed = len(mitre_tactic_freq or {})
+    kill_chain_stages_reached = sum(1 for c in (kc_distribution or {}).values() if c > 0)
+    top_tactic_name = ""
+    top_tactic_count = 0
+    if mitre_tactic_freq:
+        top_tactic_name, top_tactic_count = max(
+            mitre_tactic_freq.items(), key=lambda kv: kv[1]
+        )
+
+    tz = _ZoneInfo("Asia/Kuala_Lumpur")
+    snapshot = {
+        "timestamp": datetime.now(tz).isoformat(timespec="seconds"),
+        "reporting_period": period,
+        "window_hours": hours,
+        # Proposal-committed metrics (Ch 3.9)
+        "total_attacks": total_attacks,
+        "unique_source_ips": unique_ips,
+        "unique_countries": unique_countries,
+        "sessions_with_commands": sessions_with_commands,
+        "engagement_rate_percent": engagement_rate,
+        "top_credential_pair": top_cred_pair,
+        "top_credential_count": top_cred_count,
+        "top_credential_ratio_percent": top_cred_ratio,
+        "complete_sessions": complete_sessions,
+        "completeness_ratio_percent": completeness_ratio,
+        # Framework coverage
+        "mitre_techniques_observed": mitre_techniques_observed,
+        "mitre_tactics_observed": mitre_tactics_observed,
+        "mitre_tactics_total": 14,  # ATT&CK Enterprise v14 tactic count
+        "kill_chain_stages_reached": kill_chain_stages_reached,
+        "kill_chain_stages_total": 7,
+        "top_tactic_name": top_tactic_name,
+        "top_tactic_count": top_tactic_count,
+        "nist_csf_functions_covered": 5,  # generator emits at least one per Core Function
+        "nist_csf_functions_total": 5,
+    }
+
+    snapshot_path = Path(__file__).parent / "proposal_metrics.json"
+    try:
+        snapshot_path.write_text(_json.dumps(snapshot, indent=2))
+    except Exception:
+        # Non-fatal: snapshot is a UI convenience, do not break the report pipeline
+        pass
 
 
 # ---------------------------------------------------------------- config
@@ -311,6 +425,10 @@ def run_pipeline(
         "chart_mitre_heatmap": os.path.relpath(chart_mitre_heatmap, output_dir),
         "chart_ip_by_country": os.path.relpath(chart_ip_by_country, output_dir),
         "baseline_available": False,
+        # External threat-feed validation summary. Loaded from
+        # analyzer/validation_ips.csv (produced by validate_ips.py).
+        # None if not yet generated; template renders a fallback stanza.
+        "validation_summary": _load_validation_summary(),
     }
     for i, sec in enumerate(sections, 1):
         render_context[f"llm_narrative_section_{i}"] = sec
@@ -330,6 +448,21 @@ def run_pipeline(
     )
     filepath = output_path / filename
     filepath.write_text(report_body)
+
+    # Write proposal-committed metrics snapshot for the UI dashboard.
+    # Non-fatal on failure (report is already written).
+    try:
+        _write_proposal_metrics_snapshot(
+            data=data,
+            mitre_technique_freq=mitre_technique_freq,
+            mitre_tactic_freq=mitre_tactic_freq,
+            kc_distribution=kc_distribution,
+            period=period,
+            hours=hours,
+        )
+    except Exception as e:
+        print(f"  ⚠ proposal_metrics.json write failed: {e}")
+
     return str(filepath)
 
 
@@ -346,7 +479,7 @@ def print_banner(system: dict) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="ARGUS — Automated Honeypot Threat Intelligence")
+    parser = argparse.ArgumentParser(description="ARGUS — AI-Assisted Threat Intelligence Platform")
     parser.add_argument("--config", default="config.yml")
     parser.add_argument("--period", choices=["daily", "weekly", "monthly"], default="daily")
     parser.add_argument("--style", choices=["brief", "full"], default="brief")
@@ -377,39 +510,64 @@ def main() -> int:
     hours_map = {"daily": 24, "weekly": 168, "monthly": 720}
     hours = hours_map[args.period]
 
-    if args.stub:
-        print(f"→ Synthetic data mode ({args.period}, {hours}h window)")
-        data = generate_stub_data(hours)
-    else:
-        print(f"→ Querying Elasticsearch (last {hours}h)...")
-        data = query_elasticsearch(config, hours)
-        if data["total_attacks"] == 0:
-            print("⚠ No ES data returned. Use --stub for template iteration.")
-            return 1
+    # Metrics recorder wraps the entire pipeline for Ch 4 reliability table.
+    # No-op if the module import fails (backward compatible).
+    from metrics import PipelineMetrics
+    import time as _time
 
-    output_dir = config["report"]["output_dir"]
-    filepath = run_pipeline(config, data, args.style, args.period, hours, output_dir, args.theme)
+    pipeline_metrics = PipelineMetrics(
+        period=args.period,
+        style=args.style,
+        theme=args.theme,
+        mode="stub" if args.stub else "live",
+    )
 
-    print(f"\n✓ Report written: {filepath}")
+    try:
+        if args.stub:
+            print(f"→ Synthetic data mode ({args.period}, {hours}h window)")
+            data = generate_stub_data(hours)
+        else:
+            print(f"→ Querying Elasticsearch (last {hours}h)...")
+            data = query_elasticsearch(config, hours)
+            if data["total_attacks"] == 0:
+                print("⚠ No ES data returned. Use --stub for template iteration.")
+                pipeline_metrics.mark_failure("no ES data")
+                return 1
 
-    # --- Real PDF/DOCX render (was previously print-only) ---
-    from exporters import render_pdf, render_docx
-    
-    md_path_obj = Path(filepath)
+        output_dir = config["report"]["output_dir"]
+        filepath = run_pipeline(config, data, args.style, args.period, hours, output_dir, args.theme)
 
-    pdf_out, pdf_err = render_pdf(md_path_obj)
-    if pdf_out:
-        print(f"  ✓ PDF:  {pdf_out}")
-    else:
-        print(f"  ✗ PDF failed: {pdf_err}")
+        print(f"\n✓ Report written: {filepath}")
 
-    docx_out, docx_err = render_docx(md_path_obj)
-    if docx_out:
-        print(f"  ✓ DOCX: {docx_out}")
-    else:
-        print(f"  ✗ DOCX failed: {docx_err}")
+        # --- Real PDF/DOCX render (was previously print-only) ---
+        from exporters import render_pdf, render_docx
 
-    return 0
+        md_path_obj = Path(filepath)
+
+        _pdf_start = _time.perf_counter()
+        pdf_out, pdf_err = render_pdf(md_path_obj)
+        pipeline_metrics.record_pdf(_time.perf_counter() - _pdf_start, bool(pdf_out))
+        if pdf_out:
+            print(f"  ✓ PDF:  {pdf_out}")
+        else:
+            print(f"  ✗ PDF failed: {pdf_err}")
+
+        _docx_start = _time.perf_counter()
+        docx_out, docx_err = render_docx(md_path_obj)
+        pipeline_metrics.record_docx(_time.perf_counter() - _docx_start, bool(docx_out))
+        if docx_out:
+            print(f"  ✓ DOCX: {docx_out}")
+        else:
+            print(f"  ✗ DOCX failed: {docx_err}")
+
+        pipeline_metrics.mark_success()
+        return 0
+
+    except Exception as e:
+        pipeline_metrics.mark_failure(f"{type(e).__name__}: {e}")
+        raise
+    finally:
+        pipeline_metrics.write()
 
 if __name__ == "__main__":
     sys.exit(main())

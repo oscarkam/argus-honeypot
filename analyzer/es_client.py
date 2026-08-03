@@ -147,7 +147,7 @@ class TpotEsClient:
             index="logstash-*", size=0, query=tf,
             aggs={
                 "ips": {
-                    "terms": {"field": "src_ip.keyword", "size": 10},
+                    "terms": {"field": "src_ip.keyword", "size": 50},
                     "aggs": {"country": {"terms": {"field": "geoip.country_name.keyword", "size": 1}}},
                 }
             },

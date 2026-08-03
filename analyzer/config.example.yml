@@ -7,7 +7,7 @@
 # ---- System identity — used for report branding ----
 system:
   name: "ARGUS"
-  tagline: "Automated Low-Interaction Honeypot with Threat Intelligence Visualization"
+  tagline: "AI-Assisted Threat Intelligence Platform"
   version: "0.1"
 
 # ---- Report generation ----
