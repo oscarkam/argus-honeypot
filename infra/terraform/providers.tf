@@ -4,7 +4,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = "cp2-honeypot"
-      Owner       = "oscar-22064430"
+      Owner       = "argus-capstone"
       Environment = "capstone"
       ManagedBy   = "terraform"
     }

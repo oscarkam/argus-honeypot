@@ -58,3 +58,22 @@ reports/*.docx
 reports/charts_*/
 !reports/README.md
 !reports/.gitkeep
+# Local development tooling, not part of the delivered system
+scripts/*mirror*
+*.bak
+*.orig
+*.old
+analyzer/metrics.csv
+analyzer/validation_ips*.csv
+analyzer/proposal_metrics.json
+reports/
+ch4_figures/
+
+# Report drafts and internal documentation
+FR_*.md
+LG2_*.md
+docs/viva-cards/
+docs/LOGBOOK.md
+docs/MSD.md
+docs/PITFALLS.md
+docs/evidence/
