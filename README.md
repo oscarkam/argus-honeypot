@@ -61,8 +61,8 @@ API keys for AbuseIPDB, VirusTotal and GreyNoise, required only for the external
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/oscarkam/cp2-honeypot-iac
-cd cp2-honeypot-iac
+git clone https://github.com/oscarkam/argus-honeypot
+cd argus-honeypot
 cp analyzer/config.example.yml analyzer/config.yml
 cp infra/ansible/vars/tpot_secrets.example.yml infra/ansible/vars/tpot_secrets.yml
 ```
