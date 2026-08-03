@@ -271,26 +271,29 @@ def _render_markdown_with_images(md: str, base_dir: Path) -> None:
 
 
 def _convert_via_pandoc(md_path: Path, out_path: Path, pdf: bool) -> bool:
-    """Convert markdown to PDF or DOCX via pandoc; returns True on success."""
-    cmd = ["pandoc", str(md_path), "-o", str(out_path)]
-    if pdf:
-        # Try xelatex, fall back to other engines
-        for engine in ["xelatex", "lualatex", "pdflatex"]:
-            try:
-                subprocess.run(
-                    cmd + [f"--pdf-engine={engine}"],
-                    capture_output=True, timeout=90, cwd=str(md_path.parent),
-                )
-                if out_path.exists():
-                    return True
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                continue
+    """Convert markdown to PDF or DOCX by delegating to the analyser exporters module.
+
+    This function previously duplicated the pandoc invocation with an older flag
+    set, which caused PDF conversion to fail in the Report Studio path while the
+    command-line path succeeded. Delegating to exporters.py guarantees that every
+    conversion path in the platform uses identical settings: gfm input format,
+    automatic table of contents, coloured hyperlinks, and the LaTeX header that
+    controls table centering and page geometry.
+    """
+    try:
+        from exporters import render_pdf, render_docx
+    except Exception as e:
+        st.error(f"Could not import the exporters module: {e}")
         return False
+
+    if pdf:
+        result_path, err = render_pdf(md_path)
     else:
-        try:
-            subprocess.run(
-                cmd, capture_output=True, timeout=60, cwd=str(md_path.parent),
-            )
-            return out_path.exists()
-        except Exception:
-            return False
+        result_path, err = render_docx(md_path)
+
+    if result_path and Path(result_path).exists():
+        return True
+
+    if err:
+        st.warning(f"pandoc conversion failed: {err}")
+    return False

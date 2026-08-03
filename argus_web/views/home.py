@@ -36,7 +36,7 @@ def render():
     st.markdown(
         '<div class="hero">'
         '<h1>ARGUS</h1>'
-        '<p class="tagline">Automated Low-Interaction Honeypot with Threat Intelligence Visualization</p>'
+        '<p class="tagline">AI-Assisted Threat Intelligence Platform</p>'
         '<p class="version">v0.1 · Control Center</p>'
         '</div>',
         unsafe_allow_html=True,
@@ -131,7 +131,7 @@ def render():
     # -------- Footer --------
     st.markdown("---")
     st.caption(
-        "ARGUS v0.1 · Automated Threat Intelligence · "
+        "ARGUS v0.1 · AI-Assisted Threat Intelligence Platform · "
         "Powered by T-Pot HIVE, Elasticsearch, Ollama LLM, "
         "and framework integration with MITRE ATT&CK, Cyber Kill Chain, and NIST CSF."
     )

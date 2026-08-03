@@ -187,20 +187,26 @@ def _render_markdown_with_images(md: str, base_dir: Path) -> None:
 
 
 def _convert(md_path: Path, out_path: Path, pdf: bool) -> bool:
-    cmd = ["pandoc", str(md_path), "-o", str(out_path)]
-    if pdf:
-        for engine in ["xelatex", "lualatex", "pdflatex"]:
-            try:
-                subprocess.run(cmd + [f"--pdf-engine={engine}"],
-                               capture_output=True, timeout=90, cwd=str(md_path.parent))
-                if out_path.exists():
-                    return True
-            except (subprocess.TimeoutExpired, FileNotFoundError):
-                continue
+    """Convert markdown to PDF or DOCX by delegating to the analyser exporters module.
+
+    Shares the single conversion implementation used by the command-line pipeline
+    and the Report Studio view, ensuring identical output settings across every
+    path in the platform.
+    """
+    try:
+        from exporters import render_pdf, render_docx
+    except Exception as e:
+        st.error(f"Could not import the exporters module: {e}")
         return False
+
+    if pdf:
+        result_path, err = render_pdf(md_path)
     else:
-        try:
-            subprocess.run(cmd, capture_output=True, timeout=60, cwd=str(md_path.parent))
-            return out_path.exists()
-        except Exception:
-            return False
+        result_path, err = render_docx(md_path)
+
+    if result_path and Path(result_path).exists():
+        return True
+
+    if err:
+        st.warning(f"pandoc conversion failed: {err}")
+    return False
