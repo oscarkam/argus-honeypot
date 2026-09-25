@@ -524,7 +524,7 @@ def main() -> int:
                         help="Two-stratum sample: top-N by volume plus a random tail sample")
     parser.add_argument("--tail-n", type=int, default=100,
                         help="Stratum B size, drawn at random from below the top-N cut (default 100)")
-    parser.add_argument("--seed", type=int, default=22064430,
+    parser.add_argument("--seed", type=int, default=20260801,
                         help="Random seed for the tail draw, so the sample is reproducible")
     parser.add_argument("--population-audit", action="store_true",
                         help="Report contamination from excluded addresses, then exit. Makes no API calls.")
